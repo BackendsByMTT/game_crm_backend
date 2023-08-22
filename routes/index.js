@@ -1,5 +1,5 @@
 const { sendOtp, otpVerification, resetPassword } = require("../controllers/company_reset_password");
-const { loginUser, getClientList, addClient, updateClientDetails, deleteClient, companyCreation, transactions, getRealTimeCredits } = require("../controllers/user");
+const { loginUser, getClientList, addClient, deleteClient, companyCreation, transactions, getRealTimeCredits,  updateClientCredits, updateClientPassword, updateClientActivity } = require("../controllers/user");
 const { verifyToken } = require("../middleware/tokenAuth");
 const router = require("express").Router();
 
@@ -13,7 +13,9 @@ router.post('/resetPassword',resetPassword)
 router.post('/login', loginUser)
 router.post('/getClientList',getClientList)
 router.post('/addClient',verifyToken,addClient)
-router.post('/updateClientDetails',verifyToken,updateClientDetails)
+router.post('/updateClientCredits',verifyToken,updateClientCredits)
+router.post('/updateClientPassword',verifyToken,updateClientPassword)
+router.post('/updateClientActivity',verifyToken,updateClientActivity)
 router.post('/deleteClient',verifyToken,deleteClient)
 router.post('/transactions',verifyToken,transactions)
 router.post('/getRealTimeCredits',getRealTimeCredits)

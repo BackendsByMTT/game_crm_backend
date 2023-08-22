@@ -22,7 +22,8 @@ const companyCreation = async (req, res) => {
             userName: req.body.userName,
             password: req.body.password,
             credits: Number.POSITIVE_INFINITY,
-            designation:"company"
+            designation:"company",
+            activeStatus:true
         })
        return res.status(200).json(company)
     } catch (err) {
@@ -33,14 +34,17 @@ const companyCreation = async (req, res) => {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const loginUser = async(req,res)=>{
     try {
-        const user = await User.findOne({userName:req.body.userName},'userName password designation credits');
+        const user = await User.findOne({userName:req.body.userName},'userName password activeStatus designation credits');
         if(!user) 
            return res.status(201).json({ error: "Yor are not registered kindly contact your owner" });
         if(user.password != req.body.password)
-          return res.status(201).json({error:"Wrong credentials"})  
+          return res.status(201).json({error:"Wrong credentials"}) 
+
+        if(!user.activeStatus)
+          return res.status(204).json({}) 
 
          const token= jwt.sign({userName:req.body.userName,password:req.body.password,designation:user.designation},process.env.JWT_SECRET)       
-        return res.status(200).json({userName:user.userName,designation:user.designation,token:token,credits:user.credits})        
+        return res.status(200).json({userName:user.userName,nickName:user.nickName,designation:user.designation,token:token,credits:user.credits})        
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -57,7 +61,7 @@ const getRealTimeCredits = async(req, res)=>{
 
 const getClientList = async (req,res)=>{
     try{
-        const userClientList = await User.findOne({userName:req.body.userName}).populate({path:'clientList',select:'userName credits'});
+        const userClientList = await User.findOne({userName:req.body.userName}).populate({path:'clientList',select:'userName nickName activeStatus credits'});
 
         if(!userClientList)
           return res.status(201).json({error:"No Clients Found"})
@@ -68,7 +72,9 @@ const getClientList = async (req,res)=>{
     }
 }
 
-const updateClientDetails = async (req,res)=>{
+
+
+const updateClientCredits = async (req,res)=>{
     console.log("update",req.body)
     try{
         const clientUser = await User.findOne({userName:req.body.clientUserName})
@@ -81,14 +87,14 @@ const updateClientDetails = async (req,res)=>{
             credit: req.body.credits,
         })
           
-        const updateUserTransaction = await User.findOneAndUpdate(
-                {userName:req.body.userName},
+        const updateClientTransaction = await User.findOneAndUpdate(
+                {userName:req.body.clientUserName},
                 { $push: { transactions: transaction._id } },
                 { new: true }
-        );         
+        );      
 
+        
         const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
-            password:req.body.password,
             credits:clientUserCredits
         },{new:true})
 
@@ -99,7 +105,37 @@ const updateClientDetails = async (req,res)=>{
 
         if(updatedUser)
           return res.status(200).json({})
-        return res.status(201).json({error:"unable to update master try again"})
+        return res.status(201).json({error:"unable to update client try again"})
+    }catch(err){
+       return res.status(500).json(err)
+    }
+}
+
+const updateClientPassword = async (req,res)=>{
+    console.log("updatePass",req.body)
+    try{
+        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
+            password:req.body.password
+        },{new:true})       
+
+        if(updatedClient)
+          return res.status(200).json({})
+        return res.status(201).json({error:"unable to update client try again"})
+    }catch(err){
+       return res.status(500).json(err)
+    }
+}
+
+const updateClientActivity = async (req,res)=>{
+    console.log("updatePass",req.body)
+    try{
+        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
+            activeStatus:!req.body.activeStatus
+        },{new:true})       
+
+        if(updatedClient)
+          return res.status(200).json({})
+        return res.status(201).json({error:"unable to update client activity try again"})
     }catch(err){
        return res.status(500).json(err)
     }
@@ -147,6 +183,7 @@ const addClient = async (req, res) => {
         const newClient = await User.create({
             userName: req.body.clientUserName,
             password: req.body.password,
+            nickName: req.body.clientNickName,
             designation:clientDesignation[req.body.designation]
         })
 
@@ -162,13 +199,15 @@ const addClient = async (req, res) => {
 }
 
 const transactions = async (req, res) => {
+    console.log("hisTrans",console.log(req.body))
     try {
-        const master = await Master.findOne({ userName: req.body.userName });
-        const transactions = await master.populate('transactions')
+        const user = await User.findOne({ userName: req.body.clientUserName });
+        const transactions = await user.populate('transactions')
+        console.log(transactions)
         return res.status(200).json(transactions.transactions)
     } catch (err) {
         res.status(500).json(err)
     }
 }
  
-module.exports = {companyCreation,loginUser, getClientList,getRealTimeCredits, addClient, updateClientDetails, deleteClient, transactions};
+module.exports = {companyCreation,loginUser,updateClientActivity,updateClientPassword, getClientList,getRealTimeCredits, addClient, updateClientCredits, deleteClient, transactions};

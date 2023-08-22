@@ -5,6 +5,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    nickName: {
+        type: String,
+    },
+    activeStatus: {
+        type: Boolean,
+        default:false
+    },
     password: {
         type: String,
         required: true,
