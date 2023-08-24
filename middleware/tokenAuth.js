@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
                 console.error('Token verification failed:', err.message);
                 return res.status(201).json({ error: "You are not authenticated" })
             } else {
-                console.log(decoded.userName,req.body)
+
                 if(decoded.userName==req.body.userName){
                     req.body={...req.body,designation:decoded.designation}
                     console.log("pass")

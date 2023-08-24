@@ -53,6 +53,7 @@ const loginUser = async(req,res)=>{
 const getRealTimeCredits = async(req, res)=>{
     try {
         const user = await User.findOne({userName:req.body.userName},'credits');
+        console.log(req.body.userName, user.credits)
         return res.status(200).json({credits:user.credits})        
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -61,7 +62,7 @@ const getRealTimeCredits = async(req, res)=>{
 
 const getClientList = async (req,res)=>{
     try{
-        const userClientList = await User.findOne({userName:req.body.userName}).populate({path:'clientList',select:'userName nickName activeStatus credits'});
+        const userClientList = await User.findOne({userName:req.body.userName}).populate({path:'clientList',select:'userName nickName activeStatus designation credits'});
 
         if(!userClientList)
           return res.status(201).json({error:"No Clients Found"})
@@ -71,7 +72,6 @@ const getClientList = async (req,res)=>{
        return res.status(500).json(err)
     }
 }
-
 
 
 const updateClientCredits = async (req,res)=>{
@@ -85,6 +85,8 @@ const updateClientCredits = async (req,res)=>{
 
         const transaction = await Transaction.create({            
             credit: req.body.credits,
+            creditor:req.body.userName,
+            debitor:req.body.clientUserName
         })
           
         const updateClientTransaction = await User.findOneAndUpdate(
@@ -106,6 +108,78 @@ const updateClientCredits = async (req,res)=>{
         if(updatedUser)
           return res.status(200).json({})
         return res.status(201).json({error:"unable to update client try again"})
+    }catch(err){
+       return res.status(500).json(err)
+    }
+}
+
+const getTransanctionOnBasisOfDatePeriod = async(req,res)=>{
+
+    try{
+        const clientUser = await User.findOne({userName:req.body.clientUserName})
+        var clientUserCredits = parseInt(clientUser.credits)+parseInt(req.body.credits)
+
+        const user = await User.findOne({userName:req.body.userName})
+        var userCredits = parseInt(user.credits)-parseInt(req.body.credits)        
+
+        const transaction = await Transaction.create({            
+            credit: req.body.credits,
+            creditor:req.body.userName,
+            debitor:req.body.clientUserName
+        })
+          
+        const updateClientTransaction = await User.findOneAndUpdate(
+                {userName:req.body.clientUserName},
+                { $push: { transactions: transaction._id } },
+                { new: true }
+        );      
+
+        
+        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
+            credits:clientUserCredits
+        },{new:true})
+
+        const updatedUser = await User.findOneAndUpdate({userName:req.body.userName},{
+            credits:userCredits
+        },{new:true})
+        
+
+        if(updatedUser)
+          return res.status(200).json({})
+        return res.status(201).json({error:"unable to update client try again"})
+    }catch(err){
+       return res.status(500).json(err)
+    }
+
+
+}
+
+const updatePlayerCredits =async (req,res)=>{
+
+    try{
+        const player = await User.findOne({userName:req.body.playerUserName})
+        var playerUserCredits = parseInt(player.credits)+parseInt(req.body.credits)
+    
+        const transaction = await Transaction.create({            
+            credit: req.body.credits,
+            creditor:"game",
+            debitor:"game"
+        })
+          
+        const updateClientTransaction = await User.findOneAndUpdate(
+                {userName:req.body.playerUserName},
+                { $push: { transactions: transaction._id } },
+                { new: true }
+        );    
+
+        const updatedPalyerUserCredits = await User.findOneAndUpdate({userName:req.body.playerUserName},{
+            credits:playerUserCredits
+        },{new:true})
+        
+
+        if(updatedPalyerUserCredits)
+          return res.status(200).json({})
+        return res.status(201).json({error:"unable to update Player credits try again"})
     }catch(err){
        return res.status(500).json(err)
     }
@@ -210,4 +284,4 @@ const transactions = async (req, res) => {
     }
 }
  
-module.exports = {companyCreation,loginUser,updateClientActivity,updateClientPassword, getClientList,getRealTimeCredits, addClient, updateClientCredits, deleteClient, transactions};
+module.exports = {companyCreation,loginUser,updatePlayerCredits,updateClientActivity,updateClientPassword, getClientList,getRealTimeCredits, addClient, updateClientCredits, deleteClient, transactions};
