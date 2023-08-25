@@ -3,12 +3,12 @@ var jwt = require('jsonwebtoken');
 const User = require("../models/userSchema");
 const Transaction = require("../models/transaction");
 
-const clientDesignation ={
-    company:"master",
-    master:"distributer",
-    distributer:"subDistributer",
-    subDistributer:"store",
-    store:"user"
+const clientDesignation = {
+    company: "master",
+    master: "distributer",
+    distributer: "subDistributer",
+    subDistributer: "store",
+    store: "user"
 }
 
 const companyCreation = async (req, res) => {
@@ -22,208 +22,224 @@ const companyCreation = async (req, res) => {
             userName: req.body.userName,
             password: req.body.password,
             credits: Number.POSITIVE_INFINITY,
-            designation:"company",
-            activeStatus:true
+            designation: "company",
+            activeStatus: true
         })
-       return res.status(200).json(company)
+        return res.status(200).json(company)
     } catch (err) {
-       return res.status(500).json({ error: err })
+        return res.status(500).json({ error: err })
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const loginUser = async(req,res)=>{
+const loginUser = async (req, res) => {
     try {
-        const user = await User.findOne({userName:req.body.userName},'userName password activeStatus designation credits');
-        if(!user) 
-           return res.status(201).json({ error: "Yor are not registered kindly contact your owner" });
-        if(user.password != req.body.password)
-          return res.status(201).json({error:"Wrong credentials"}) 
+        const user = await User.findOne({ userName: req.body.userName }, 'userName password activeStatus designation credits');
+        if (!user)
+            return res.status(201).json({ error: "Yor are not registered kindly contact your owner" });
+        if (user.password != req.body.password)
+            return res.status(201).json({ error: "Wrong credentials" })
 
-        if(!user.activeStatus)
-          return res.status(204).json({}) 
+        if (!user.activeStatus)
+            return res.status(204).json({})
 
-         const token= jwt.sign({userName:req.body.userName,password:req.body.password,designation:user.designation},process.env.JWT_SECRET)       
-        return res.status(200).json({userName:user.userName,nickName:user.nickName,designation:user.designation,token:token,credits:user.credits})        
+        const token = jwt.sign({ userName: req.body.userName, password: req.body.password, designation: user.designation }, process.env.JWT_SECRET)
+        return res.status(200).json({ userName: user.userName, nickName: user.nickName, designation: user.designation, token: token, credits: user.credits })
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 }
 
-const getRealTimeCredits = async(req, res)=>{
+const getRealTimeCredits = async (req, res) => {
     try {
-        const user = await User.findOne({userName:req.body.userName},'credits');
+        const user = await User.findOne({ userName: req.body.userName }, 'credits');
         console.log(req.body.userName, user.credits)
-        return res.status(200).json({credits:user.credits})        
+        return res.status(200).json({ credits: user.credits })
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 }
 
-const getClientList = async (req,res)=>{
-    try{
-        const userClientList = await User.findOne({userName:req.body.userName}).populate({path:'clientList',select:'userName nickName activeStatus designation credits'});
+const getClientList = async (req, res) => {
+    try {
+        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits' });
 
-        if(!userClientList)
-          return res.status(201).json({error:"No Clients Found"})
+        if (!userClientList)
+            return res.status(201).json({ error: "No Clients Found" })
         return res.status(200).json(userClientList)
-        
-    }catch(err){
-       return res.status(500).json(err)
+
+    } catch (err) {
+        return res.status(500).json(err)
     }
 }
 
 
-const updateClientCredits = async (req,res)=>{
-    console.log("update",req.body)
-    try{
-        const clientUser = await User.findOne({userName:req.body.clientUserName})
-        var clientUserCredits = parseInt(clientUser.credits)+parseInt(req.body.credits)
+const updateClientCredits = async (req, res) => {
+    console.log("update", req.body)
+    try {
+        const clientUser = await User.findOne({ userName: req.body.clientUserName })
+        var clientUserCredits = parseInt(clientUser.credits) + parseInt(req.body.credits)
 
-        const user = await User.findOne({userName:req.body.userName})
-        var userCredits = parseInt(user.credits)-parseInt(req.body.credits)        
+        const user = await User.findOne({ userName: req.body.userName })
+        var userCredits = parseInt(user.credits) - parseInt(req.body.credits)
 
-        const transaction = await Transaction.create({            
+        const transaction = await Transaction.create({
             credit: req.body.credits,
-            creditor:req.body.userName,
-            debitor:req.body.clientUserName
+            creditorDesignation: req.body.designation,
+            debitorDesignation: clientDesignation[req.body.designation],
+            creditor: req.body.userName,
+            debitor: req.body.clientUserName
         })
-          
+
         const updateClientTransaction = await User.findOneAndUpdate(
-                {userName:req.body.clientUserName},
-                { $push: { transactions: transaction._id } },
-                { new: true }
-        );      
+            { userName: req.body.clientUserName },
+            { $push: { transactions: transaction._id } },
+            { new: true }
+        );
 
-        
-        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
-            credits:clientUserCredits
-        },{new:true})
 
-        const updatedUser = await User.findOneAndUpdate({userName:req.body.userName},{
-            credits:userCredits
-        },{new:true})
-        
+        const updatedClient = await User.findOneAndUpdate({ userName: req.body.clientUserName }, {
+            credits: clientUserCredits
+        }, { new: true })
 
-        if(updatedUser)
-          return res.status(200).json({})
-        return res.status(201).json({error:"unable to update client try again"})
-    }catch(err){
-       return res.status(500).json(err)
+        const updatedUser = await User.findOneAndUpdate({ userName: req.body.userName }, {
+            credits: userCredits
+        }, { new: true })
+
+
+        if (updatedUser)
+            return res.status(200).json({})
+        return res.status(201).json({ error: "unable to update client try again" })
+    } catch (err) {
+        return res.status(500).json(err)
     }
 }
 
-const getTransanctionOnBasisOfDatePeriod = async(req,res)=>{
+const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
+    console.log("getBasisOfDate", req.body)
+    try {
+        if (req.body.designation == "company") {
+            if (req.body.hirarchyName != "all") {
+                const transactions = await Transaction.find({$and:[{$or:[ {creditorDesignation: req.body.hirarchyName}, {debitorDesignation: req.body.hirarchyName}]}, {createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate }} ]})
+               
+                const transactionsFiltered = transactions.map((items)=>{
+                    if(items.creditor==req.body.userName)
+                       return {...items.toObject(),creditor:"COMPANY"}
+                    return items.toObject()
+                })
 
-    try{
-        const clientUser = await User.findOne({userName:req.body.clientUserName})
-        var clientUserCredits = parseInt(clientUser.credits)+parseInt(req.body.credits)
+                if (transactionsFiltered)
+                    return res.status(200).json({ transactionsFiltered })
+                return res.status(201).json({ error: "unable to find transactions try again" })
+            } else {
+                const transactions = await Transaction.find({ createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } })
+                
+                const transactionsFiltered = transactions.map((items)=>{
+                    if(items.creditor==req.body.userName)
+                       return {...items.toObject(),creditor:"COMPANY"}
+                   
+                    return items.toObject()
+                })
+                
+                if (transactionsFiltered)
+                    return res.status(200).json({ transactionsFiltered })
+                return res.status(201).json({ error: "unable to find transactions try again" })
+            }
+        }
+        else {
+            const transactions = await Transaction.find({ $and:[{$or:[{creditorDesignation: req.body.designation},{ debitorDesignation: req.body.designation}]}, {createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate }}] })
+            const transactionsFiltered = transactions.map((items)=>{
+                if(items.creditor==req.body.userName)
+                   return {...items.toObject(),creditor:"Me"}
+                if(items.debitor==req.body.userName)
+                   return {...items.toObject(),creditor:"YourOwner",debitor:"Me"}
+                return items.toObject()
+            })
+           
+            if (transactionsFiltered)
+                return res.status(200).json({ transactionsFiltered })
+            return res.status(201).json({ error: "unable to find transactions try again" })
+        }
 
-        const user = await User.findOne({userName:req.body.userName})
-        var userCredits = parseInt(user.credits)-parseInt(req.body.credits)        
+    } catch (err) {
+        return res.status(500).json(err)
+    }
 
-        const transaction = await Transaction.create({            
+
+}
+
+const updatePlayerCredits = async (req, res) => {
+
+    try {
+        const player = await User.findOne({ userName: req.body.playerUserName })
+        var playerUserCredits = parseInt(player.credits) + parseInt(req.body.credits)
+
+        const transaction = await Transaction.create({
             credit: req.body.credits,
-            creditor:req.body.userName,
-            debitor:req.body.clientUserName
+            creditor: "game",
+            creditorDesignation: "game",
+
+            debitor: "game",
         })
-          
+
         const updateClientTransaction = await User.findOneAndUpdate(
-                {userName:req.body.clientUserName},
-                { $push: { transactions: transaction._id } },
-                { new: true }
-        );      
+            { userName: req.body.playerUserName },
+            { $push: { transactions: transaction._id } },
+            { new: true }
+        );
 
-        
-        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
-            credits:clientUserCredits
-        },{new:true})
-
-        const updatedUser = await User.findOneAndUpdate({userName:req.body.userName},{
-            credits:userCredits
-        },{new:true})
-        
-
-        if(updatedUser)
-          return res.status(200).json({})
-        return res.status(201).json({error:"unable to update client try again"})
-    }catch(err){
-       return res.status(500).json(err)
-    }
+        const updatedPalyerUserCredits = await User.findOneAndUpdate({ userName: req.body.playerUserName }, {
+            credits: playerUserCredits
+        }, { new: true })
 
 
-}
-
-const updatePlayerCredits =async (req,res)=>{
-
-    try{
-        const player = await User.findOne({userName:req.body.playerUserName})
-        var playerUserCredits = parseInt(player.credits)+parseInt(req.body.credits)
-    
-        const transaction = await Transaction.create({            
-            credit: req.body.credits,
-            creditor:"game",
-            debitor:"game"
-        })
-          
-        const updateClientTransaction = await User.findOneAndUpdate(
-                {userName:req.body.playerUserName},
-                { $push: { transactions: transaction._id } },
-                { new: true }
-        );    
-
-        const updatedPalyerUserCredits = await User.findOneAndUpdate({userName:req.body.playerUserName},{
-            credits:playerUserCredits
-        },{new:true})
-        
-
-        if(updatedPalyerUserCredits)
-          return res.status(200).json({})
-        return res.status(201).json({error:"unable to update Player credits try again"})
-    }catch(err){
-       return res.status(500).json(err)
+        if (updatedPalyerUserCredits)
+            return res.status(200).json({})
+        return res.status(201).json({ error: "unable to update Player credits try again" })
+    } catch (err) {
+        return res.status(500).json(err)
     }
 }
 
-const updateClientPassword = async (req,res)=>{
-    console.log("updatePass",req.body)
-    try{
-        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
-            password:req.body.password
-        },{new:true})       
+const updateClientPassword = async (req, res) => {
+    console.log("updatePass", req.body)
+    try {
+        const updatedClient = await User.findOneAndUpdate({ userName: req.body.clientUserName }, {
+            password: req.body.password
+        }, { new: true })
 
-        if(updatedClient)
-          return res.status(200).json({})
-        return res.status(201).json({error:"unable to update client try again"})
-    }catch(err){
-       return res.status(500).json(err)
+        if (updatedClient)
+            return res.status(200).json({})
+        return res.status(201).json({ error: "unable to update client try again" })
+    } catch (err) {
+        return res.status(500).json(err)
     }
 }
 
-const updateClientActivity = async (req,res)=>{
-    console.log("updatePass",req.body)
-    try{
-        const updatedClient = await User.findOneAndUpdate({userName:req.body.clientUserName},{
-            activeStatus:!req.body.activeStatus
-        },{new:true})       
+const updateClientActivity = async (req, res) => {
+    console.log("updatePass", req.body)
+    try {
+        const updatedClient = await User.findOneAndUpdate({ userName: req.body.clientUserName }, {
+            activeStatus: !req.body.activeStatus
+        }, { new: true })
 
-        if(updatedClient)
-          return res.status(200).json({})
-        return res.status(201).json({error:"unable to update client activity try again"})
-    }catch(err){
-       return res.status(500).json(err)
+        if (updatedClient)
+            return res.status(200).json({})
+        return res.status(201).json({ error: "unable to update client activity try again" })
+    } catch (err) {
+        return res.status(500).json(err)
     }
 }
 
-const deleteClient = async (req,res)=>{
-    console.log("delete",req.body)
-    try{
-        const deletedClient = await User.findOneAndDelete({userName:req.body.clientUserName})
-        if(deletedClient)
-          return res.status(200).json({})
-        return res.status(201).json({error:"Unable to delete client try again"})
-    }catch(err){
-       return res.status(500).json(err)
+const deleteClient = async (req, res) => {
+    console.log("delete", req.body)
+    try {
+        const deletedClient = await User.findOneAndDelete({ userName: req.body.clientUserName })
+        if (deletedClient)
+            return res.status(200).json({})
+        return res.status(201).json({ error: "Unable to delete client try again" })
+    } catch (err) {
+        return res.status(500).json(err)
     }
 }
 
@@ -232,9 +248,9 @@ const deleteClient = async (req,res)=>{
 
 async function addClientToUserList(userId, clientId) {
     console.log("add user client to list")
-    try {       
+    try {
         const updatedUserClients = await User.findOneAndUpdate(
-            {userName:userId},
+            { userName: userId },
             { $push: { clientList: clientId } },
             { new: true }
         );
@@ -249,16 +265,16 @@ async function addClientToUserList(userId, clientId) {
 }
 
 const addClient = async (req, res) => {
-    console.log("addClient",req.body)
+    console.log("addClient", req.body)
     try {
-        if (await User.findOne({userName:req.body.clientUserName}))
+        if (await User.findOne({ userName: req.body.clientUserName }))
             return res.status(201).json({ error: "This username already exist" })
-      
+
         const newClient = await User.create({
             userName: req.body.clientUserName,
             password: req.body.password,
             nickName: req.body.clientNickName,
-            designation:clientDesignation[req.body.designation]
+            designation: clientDesignation[req.body.designation]
         })
 
         if (newClient) {
@@ -273,7 +289,7 @@ const addClient = async (req, res) => {
 }
 
 const transactions = async (req, res) => {
-    console.log("hisTrans",console.log(req.body))
+    console.log("hisTrans", console.log(req.body))
     try {
         const user = await User.findOne({ userName: req.body.clientUserName });
         const transactions = await user.populate('transactions')
@@ -283,5 +299,5 @@ const transactions = async (req, res) => {
         res.status(500).json(err)
     }
 }
- 
-module.exports = {companyCreation,loginUser,updatePlayerCredits,updateClientActivity,updateClientPassword, getClientList,getRealTimeCredits, addClient, updateClientCredits, deleteClient, transactions};
+
+module.exports = { companyCreation, loginUser, updatePlayerCredits, updateClientActivity, updateClientPassword, getTransanctionOnBasisOfDatePeriod, getClientList, getRealTimeCredits, addClient, updateClientCredits, deleteClient, transactions };

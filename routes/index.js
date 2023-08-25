@@ -1,5 +1,5 @@
 const { sendOtp, otpVerification, resetPassword } = require("../controllers/company_reset_password");
-const { loginUser, getClientList, addClient, deleteClient, companyCreation, transactions, getRealTimeCredits,  updateClientCredits, updateClientPassword, updateClientActivity, updatePlayerCredits } = require("../controllers/user");
+const { loginUser, getClientList, addClient, deleteClient, companyCreation, transactions, getRealTimeCredits,  updateClientCredits, updateClientPassword, updateClientActivity, updatePlayerCredits, getTransanctionOnBasisOfDatePeriod } = require("../controllers/user");
 const { verifyToken } = require("../middleware/tokenAuth");
 const { verifyTokenAuthLogin } = require("../middleware/tokenAuthLogin");
 const router = require("express").Router();
@@ -21,5 +21,6 @@ router.post('/deleteClient',verifyToken,deleteClient)
 router.post('/transactions',verifyToken,transactions)
 router.post('/getRealTimeCredits',getRealTimeCredits)
 router.post('/updatePlayerCreditsInGame',updatePlayerCredits)
+router.post('/getTransanctionOnBasisOfDatePeriod',getTransanctionOnBasisOfDatePeriod)
 
 module.exports = router;

@@ -4,10 +4,16 @@ const transactionSchema = new mongoose.Schema({
     creditor: {
         type: String
     },
+    creditorDesignation:{
+        type: String
+    },
     debitor: {
         type: String
     },
     credit: {
+        type: String
+    },
+    debitorDesignation:{
         type: String
     },
     createdAtDate: {
