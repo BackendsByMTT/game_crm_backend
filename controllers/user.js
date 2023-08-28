@@ -62,7 +62,7 @@ const getRealTimeCredits = async (req, res) => {
 
 const getClientList = async (req, res) => {
     try {
-        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits' });
+        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged' });
 
         if (!userClientList)
             return res.status(201).json({ error: "No Clients Found" })
@@ -102,6 +102,18 @@ const updateClientCredits = async (req, res) => {
             credits: clientUserCredits
         }, { new: true })
 
+        if (req.body.credits > 0) {
+            const updatedClientRecharge = await User.findOneAndUpdate({ userName: req.body.clientUserName }, {
+                totalRecharged: clientUser.totalRecharged + req.body.credits
+            }, { new: true })
+        }
+
+        if (req.body.credits < 0) {
+            const updatedClientReedem = await User.findOneAndUpdate({ userName: req.body.clientUserName }, {
+                totalRedeemed: clientUser.totalRedeemed + req.body.credits        
+            }, { new: true })
+        }
+
         const updatedUser = await User.findOneAndUpdate({ userName: req.body.userName }, {
             credits: userCredits
         }, { new: true })
@@ -120,11 +132,11 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
     try {
         if (req.body.designation == "company") {
             if (req.body.hirarchyName != "all") {
-                const transactions = await Transaction.find({$and:[{$or:[ {creditorDesignation: req.body.hirarchyName}, {debitorDesignation: req.body.hirarchyName}]}, {createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate }} ]})
-               
-                const transactionsFiltered = transactions.map((items)=>{
-                    if(items.creditor==req.body.userName)
-                       return {...items.toObject(),creditor:"COMPANY"}
+                const transactions = await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.hirarchyName }, { debitorDesignation: req.body.hirarchyName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
+
+                const transactionsFiltered = transactions.map((items) => {
+                    if (items.creditor == req.body.userName)
+                        return { ...items.toObject(), creditor: "COMPANY" }
                     return items.toObject()
                 })
 
@@ -133,29 +145,29 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
                 return res.status(201).json({ error: "unable to find transactions try again" })
             } else {
                 const transactions = await Transaction.find({ createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } })
-                
-                const transactionsFiltered = transactions.map((items)=>{
-                    if(items.creditor==req.body.userName)
-                       return {...items.toObject(),creditor:"COMPANY"}
-                   
+
+                const transactionsFiltered = transactions.map((items) => {
+                    if (items.creditor == req.body.userName)
+                        return { ...items.toObject(), creditor: "COMPANY" }
+
                     return items.toObject()
                 })
-                
+
                 if (transactionsFiltered)
                     return res.status(200).json({ transactionsFiltered })
                 return res.status(201).json({ error: "unable to find transactions try again" })
             }
         }
         else {
-            const transactions = await Transaction.find({ $and:[{$or:[{creditorDesignation: req.body.designation},{ debitorDesignation: req.body.designation}]}, {createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate }}] })
-            const transactionsFiltered = transactions.map((items)=>{
-                if(items.creditor==req.body.userName)
-                   return {...items.toObject(),creditor:"Me"}
-                if(items.debitor==req.body.userName)
-                   return {...items.toObject(),creditor:"YourOwner",debitor:"Me"}
+            const transactions = await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.designation }, { debitorDesignation: req.body.designation }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
+            const transactionsFiltered = transactions.map((items) => {
+                if (items.creditor == req.body.userName)
+                    return { ...items.toObject(), creditor: "Me" }
+                if (items.debitor == req.body.userName)
+                    return { ...items.toObject(), creditor: "YourOwner", debitor: "Me" }
                 return items.toObject()
             })
-           
+
             if (transactionsFiltered)
                 return res.status(200).json({ transactionsFiltered })
             return res.status(201).json({ error: "unable to find transactions try again" })

@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     },
     activeStatus: {
         type: Boolean,
-        default:false
+        default: false
     },
     password: {
         type: String,
@@ -23,13 +23,24 @@ const userSchema = new mongoose.Schema({
     clientList: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-     }
+    }
     ],
     transactions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Transaction',
     }
     ],
+    lastLogin: {
+        type: String,
+    },
+    totalRecharged: {
+        type: Number,
+        default: 0
+    },
+    totalRedeemed: {
+        type: Number,
+        default: 0
+    },
     credits: {
         type: Number,
         default: 0
