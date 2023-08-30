@@ -43,6 +43,11 @@ const loginUser = async (req, res) => {
         if (!user.activeStatus)
             return res.status(204).json({})
 
+        const istOffset = 5.5 * 60 * 60 * 1000; // Indian Standard Time offset in milliseconds (5 hours and 30 minutes)
+        const istDate = new Date(Date.now() + istOffset);
+             
+        const updatedUserLoginTime = await User.findOneAndUpdate({ userName: req.body.userName }, {lastLogin:istDate.toISOString()});
+
         const token = jwt.sign({ userName: req.body.userName, password: req.body.password, designation: user.designation }, process.env.JWT_SECRET)
         return res.status(200).json({ userName: user.userName, nickName: user.nickName, designation: user.designation, token: token, credits: user.credits })
     } catch (err) {
@@ -62,7 +67,7 @@ const getRealTimeCredits = async (req, res) => {
 
 const getClientList = async (req, res) => {
     try {
-        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged' });
+        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin' });
 
         if (!userClientList)
             return res.status(201).json({ error: "No Clients Found" })
