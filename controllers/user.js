@@ -162,7 +162,7 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
                     return res.status(200).json({ transactionsFiltered })
                 return res.status(201).json({ error: "unable to find transactions try again" })
             } else {
-                const transactions = await Transaction.find({$and:[{$or:[{creditor:req.body.userName},{debitor:req.body.userName}]}, {createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }]})
+                const transactions = await Transaction.find({ createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } })
 
                 const transactionsFiltered = transactions.map((items) => {
                     if (items.creditor == req.body.userName)
@@ -177,7 +177,7 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
             }
         }
         else {
-            const transactions = await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.designation }, { debitorDesignation: req.body.designation }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
+            const transactions = await Transaction.find({ $and: [{ $or: [{ creditor: req.body.userName }, { debitor: req.body.userName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
             const transactionsFiltered = transactions.map((items) => {
                 if (items.creditor == req.body.userName)
                     return { ...items.toObject(), creditor: "Me" }
