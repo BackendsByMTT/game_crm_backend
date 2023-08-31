@@ -97,7 +97,9 @@ const updateClientCredits = async (req, res) => {
                 if(clientUserCredits<=0)
                     return res.status(201).json({error:"Transcation dropped due to unexpedcted credit update,Please try again"})           
            
-        }
+        }else
+            if(clientUserCredits<=0)
+                return res.status(201).json({error:"Transcation dropped due to unexpedcted credit update,Please try again"})           
        
         const transaction = await Transaction.create({
             credit: req.body.credits,
