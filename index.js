@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser');
 require("dotenv").config()
 
 const corsOrigin ={
-  origin:['http://localhost:5173','http://localhost:5174','https://game-crm-prototype-frontend-nhix.vercel.app'], //or whatever port your frontend is using
+  origin:['http://localhost:5173','http://localhost:5174','https://game-crm-frontend.vercel.app'], //or whatever port your frontend is using
   credentials:true,            
   optionSuccessStatus:200
 }
