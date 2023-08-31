@@ -89,7 +89,7 @@ const updateClientCredits = async (req, res) => {
         const user = await User.findOne({ userName: req.body.userName })
         var userCredits = parseInt(user.credits) - parseInt(req.body.credits)
 
-        if(req.body.designation!='company'){
+        if(user.designation!='company'){
             if(req.body.credits>=0){
               if(userCredits<=0)
                 return res.status(201).json({error:"Transcation dropped due to unexpedcted transcation update,Please try again"})
