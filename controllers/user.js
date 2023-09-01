@@ -179,10 +179,36 @@ const updateClientCredits = async (req, res) => {
 
 const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
     console.log("getBasisOfDate", req.body)
+
+    const page = parseInt(req.body.pageNumber) || 1;
+    const limit = parseInt(req.body.limit) || 20;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const results = {};
+
+    var totalPageCount =await Transaction.countDocuments().exec()    
+
+    if (endIndex < totalPageCount ) {
+        results.next = {
+            page: page + 1,
+            limit: limit,
+        };
+    }
+
+    if (startIndex > 0) {
+        results.previous = {
+            page: page - 1,
+            limit: limit,
+        };
+    }
+
     try {
         if (req.body.designation == "company") {
             if (req.body.hirarchyName != "all") {
-                const transactions = await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.hirarchyName }, { debitorDesignation: req.body.hirarchyName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
+                const transactions = await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.hirarchyName }, { debitorDesignation: req.body.hirarchyName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate }}]}).limit(limit).skip(startIndex).exec();
+                totalPageCount =await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.hirarchyName }, { debitorDesignation: req.body.hirarchyName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate }}]}).countDocuments().exec()    
 
                 const transactionsFiltered = transactions.map((items) => {
                     if (items.creditor == req.body.userName)
@@ -191,10 +217,11 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
                 })
 
                 if (transactionsFiltered)
-                    return res.status(200).json({ transactionsFiltered })
+                    return res.status(200).json({ transactionsFiltered,totalPageCount })
                 return res.status(201).json({ error: "unable to find transactions try again" })
             } else {
-                const transactions = await Transaction.find({ createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } })
+                const transactions = await Transaction.find({ createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }).limit(limit).skip(startIndex).exec();
+                totalPageCount =await Transaction.find({ createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }).countDocuments().exec()    
 
                 const transactionsFiltered = transactions.map((items) => {
                     if (items.creditor == req.body.userName)
@@ -204,12 +231,12 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
                 })
 
                 if (transactionsFiltered)
-                    return res.status(200).json({ transactionsFiltered })
+                    return res.status(200).json({ transactionsFiltered,totalPageCount })
                 return res.status(201).json({ error: "unable to find transactions try again" })
             }
         }
         else {
-            const transactions = await Transaction.find({ $and: [{ $or: [{ creditor: req.body.userName }, { debitor: req.body.userName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
+            const transactions = await Transaction.find({ $and: [{ $or: [{ creditor: req.body.userName }, { debitor: req.body.userName }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] }).limit(limit).skip(startIndex).exec();
             const transactionsFiltered = transactions.map((items) => {
                 if (items.creditor == req.body.userName)
                     return { ...items.toObject(), creditor: "Me" }
