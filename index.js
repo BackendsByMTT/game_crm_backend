@@ -15,7 +15,7 @@ const corsOrigin ={
 app.use(cors(corsOrigin))
 const mongoDBUrl = process.env.MONGOURL;
 
-main().then(()=>console.log("database connected"))
+main().then(()=>console.log("database connectedd"))
 main().catch((err) => console.log(err));
 async function main() {
   await mongoose.connect(mongoDBUrl);
