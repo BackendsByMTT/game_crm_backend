@@ -45,8 +45,10 @@ const loginUser = async (req, res) => {
 
         const istOffset = 5.5 * 60 * 60 * 1000; // Indian Standard Time offset in milliseconds (5 hours and 30 minutes)
         const istDate = new Date(Date.now() + istOffset);
-             
-        const updatedUserLoginTime = await User.findOneAndUpdate({ userName: req.body.userName }, {lastLogin:istDate.toISOString()});
+
+        const updatedUserLoginTime = await User.findOneAndUpdate({ userName: req.body.userName }, { lastLogin: istDate.toISOString() });
+        const updatedUserLoginTimes = await User.findOneAndUpdate({ userName: req.body.userName }, { loginTimes: (updatedUserLoginTime.loginTimes + 1) });
+
 
         const token = jwt.sign({ userName: req.body.userName, password: req.body.password, designation: user.designation }, process.env.JWT_SECRET)
         return res.status(200).json({ userName: user.userName, nickName: user.nickName, designation: user.designation, token: token, credits: user.credits })
@@ -66,12 +68,42 @@ const getRealTimeCredits = async (req, res) => {
 }
 
 const getClientList = async (req, res) => {
+
+    console.log("pageNumber",req.body.pageNumber)
+    const page = parseInt(req.body.pageNumber) || 1;
+    const limit = parseInt(req.body.limit) || 10;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const results = {};
+
+    const totalPageCount =await User.countDocuments().exec()
+
+
+    if (endIndex < totalPageCount ) {
+        results.next = {
+            page: page + 1,
+            limit: limit,
+        };
+    }
+
+    if (startIndex > 0) {
+        results.previous = {
+            page: page - 1,
+            limit: limit,
+        };
+    }
+
     try {
-        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin' });
+        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes',options: {
+            limit: limit, // Apply limit here
+            skip: startIndex,
+          }, }).exec();
 
         if (!userClientList)
             return res.status(201).json({ error: "No Clients Found" })
-        return res.status(200).json(userClientList)
+        return res.status(200).json({...userClientList,totalPageCount})
 
     } catch (err) {
         return res.status(500).json(err)
@@ -85,22 +117,22 @@ const updateClientCredits = async (req, res) => {
         const clientUser = await User.findOne({ userName: req.body.clientUserName })
         var clientUserCredits = parseInt(clientUser.credits) + parseInt(req.body.credits)
 
-  
+
         const user = await User.findOne({ userName: req.body.userName })
         var userCredits = parseInt(user.credits) - parseInt(req.body.credits)
 
-        if(user.designation!='company'){
-            if(req.body.credits>=0){
-              if(userCredits<=0)
-                return res.status(201).json({error:"Transcation dropped due to unexpedcted transcation update,Please try again"})
-            }else
-                if(clientUserCredits<=0)
-                    return res.status(201).json({error:"Transcation dropped due to unexpedcted credit update,Please try again"})           
-           
-        }else
-            if(clientUserCredits<=0)
-                return res.status(201).json({error:"Transcation dropped due to unexpedcted credit update,Please try again"})           
-       
+        if (user.designation != 'company') {
+            if (req.body.credits >= 0) {
+                if (userCredits <= 0)
+                    return res.status(201).json({ error: "Transcation dropped due to unexpedcted transcation update,Please try again" })
+            } else
+                if (clientUserCredits <= 0)
+                    return res.status(201).json({ error: "Transcation dropped due to unexpedcted credit update,Please try again" })
+
+        } else
+            if (clientUserCredits <= 0)
+                return res.status(201).json({ error: "Transcation dropped due to unexpedcted credit update,Please try again" })
+
         const transaction = await Transaction.create({
             credit: req.body.credits,
             creditorDesignation: req.body.designation,
@@ -128,7 +160,7 @@ const updateClientCredits = async (req, res) => {
 
         if (req.body.credits < 0) {
             const updatedClientReedem = await User.findOneAndUpdate({ userName: req.body.clientUserName }, {
-                totalRedeemed: clientUser.totalRedeemed + req.body.credits        
+                totalRedeemed: clientUser.totalRedeemed + req.body.credits
             }, { new: true })
         }
 

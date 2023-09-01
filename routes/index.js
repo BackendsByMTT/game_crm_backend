@@ -3,7 +3,16 @@ const { loginPlayer, updatePlayerBet, updatePlayerWin, getRealTimePlayerCredits 
 const { loginUser, getClientList, addClient, deleteClient, companyCreation, transactions, getRealTimeCredits,  updateClientCredits, updateClientPassword, updateClientActivity, updatePlayerCredits, getTransanctionOnBasisOfDatePeriod } = require("../controllers/user");
 const { verifyToken } = require("../middleware/tokenAuth");
 const { verifyTokenAuthLogin } = require("../middleware/tokenAuthLogin");
+const User = require("../models/userSchema");
 const router = require("express").Router();
+
+
+// const updateMany = async()=>{
+//   const result = await User.updateMany({}, { $set: { loginTimes: 0 } });
+//     console.log("upateManty",result)
+// }
+
+// updateMany()
 
 //Company Routes
 router.post('/company',companyCreation)

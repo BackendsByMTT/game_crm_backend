@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     },
     activeStatus: {
         type: Boolean,
-        default: false
+        default: true
     },
     password: {
         type: String,
@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     ],
     lastLogin: {
         type: String,
+    },
+    loginTimes:{
+        type:Number,
+        default:0
     },
     totalRecharged: {
         type: Number,
