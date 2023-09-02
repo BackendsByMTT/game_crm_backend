@@ -68,45 +68,55 @@ const getRealTimeCredits = async (req, res) => {
 }
 
 const getClientList = async (req, res) => {
-
-    console.log("pageNumber",req.body.pageNumber)
+    console.log("pageNumber", req.body.pageNumber);
     const page = parseInt(req.body.pageNumber) || 1;
     const limit = parseInt(req.body.limit) || 10;
 
     const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
 
     const results = {};
 
-    const totalPageCount =await User.countDocuments().exec()
-
-
-    if (endIndex < totalPageCount ) {
-        results.next = {
-            page: page + 1,
-            limit: limit,
-        };
-    }
-
-    if (startIndex > 0) {
-        results.previous = {
-            page: page - 1,
-            limit: limit,
-        };
-    }
-
     try {
-        const userClientList = await User.findOne({ userName: req.body.userName }).populate({ path: 'clientList', select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes',options: {
-            limit: limit, // Apply limit here
-            skip: startIndex,
-          }, }).exec();
+        const user = await User.findOne({ userName: req.body.userName }).populate('clientList');
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
 
-        if (!userClientList)
-            return res.status(201).json({ error: "No Clients Found" })
-        return res.status(200).json({...userClientList,totalPageCount})
+        const totalClientCount = user.clientList.length;
+        console.log("count", totalClientCount);
 
+        if (startIndex + limit < totalClientCount) {
+            results.next = {
+                page: page + 1,
+                limit: limit,
+            };
+        }
+
+        if (startIndex > 0) {
+            results.previous = {
+                page: page - 1,
+                limit: limit,
+            };
+        }
+
+        const userClientList = await User.findOne({ userName: req.body.userName })
+            .populate({
+                path: 'clientList',
+                select: 'userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes',
+                options: {
+                    limit: limit,
+                    skip: startIndex,
+                },
+            })
+            .exec();
+
+        if (!userClientList) {
+            return res.status(201).json({ error: "No Clients Found" });
+        }
+
+        return res.status(200).json({ ...userClientList, totalPageCount: totalClientCount});
     } catch (err) {
-        return res.status(500).json(err)
+        return res.status(500).json(err);
     }
 }
 
