@@ -131,7 +131,7 @@ const getClientList = async (req, res) => {
     var userList = {}
 
     if (req.body.isAll) {
-      userList = await User.find({ userName: req.body.userName })
+      userList = await User.findOne({ userName: req.body.userName })
         .populate({
           path: "clientList",
           select:
@@ -143,7 +143,7 @@ const getClientList = async (req, res) => {
         })
         .exec();
     } else {
-      userList = await User.find({ userName: req.body.userName })
+      userList = await User.findOne({ userName: req.body.userName })
         .populate({
           path: "clientList",
           match: { activeStatus: req.body.isActive },
@@ -516,8 +516,6 @@ const addClient = async (req, res) => {
       return res.status(201).json({ error: "This username already exist" });
 
     var designation =""
-
-
 
     if(req.body.designation == 'subDistributer' ) {
         if(!req.body.isPlayer)
