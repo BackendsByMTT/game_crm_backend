@@ -131,12 +131,10 @@ const getClientList = async (req, res) => {
 
     var userList = {}
     if(user[0].designation=='subDistributer'){
-      ///////////////////////////////////// SubDistributer getClientList  /////////////////////////////////////////////////////////////
-      if (req.body.isAll) {
         userList = await User.find({ userName: req.body.userName })
           .populate({
             path: "clientList",
-            match: { designation: req.body.isAllClients ?{$in:['store','player']}:(req.body.isStorePlayers?"store":'player') },
+            match: {activeStatus:req.body.isAll?{$in:[true,false]}:req.body.isActive ,designation: req.body.isAllClients ?{$in:['store','player']}:(req.body.isStorePlayers?"store":'player') },
             select:
               "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
             options: {
@@ -144,28 +142,12 @@ const getClientList = async (req, res) => {
               skip: startIndex,
             },
           })
-          .exec();
-      } else {
-        userList = await User.find({ userName: req.body.userName })
-          .populate({
-            path: "clientList",
-            match: { activeStatus: req.body.isActive,designation: req.body.isAllClients ?{$in:['store','player']}:(req.body.isStorePlayers?"store":'player') },
-            select:
-              "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
-            options: {
-              limit: limit,
-              skip: startIndex,
-            },
-          })
-          .exec();
-      }
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+          .exec();   
     }else{
-
-      if (req.body.isAll) {
         userList = await User.find({ userName: req.body.userName })
           .populate({
             path: "clientList",
+            match:{activeStatus:req.body.isAll?{$in:[true,false]}:req.body.isActive},
             select:
               "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
             options: {
@@ -173,22 +155,7 @@ const getClientList = async (req, res) => {
               skip: startIndex,
             },
           })
-          .exec();
-      } else {
-        userList = await User.find({ userName: req.body.userName })
-          .populate({
-            path: "clientList",
-            match: { activeStatus: req.body.isActive },
-            select:
-              "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
-            options: {
-              limit: limit,
-              skip: startIndex,
-            },
-          })
-          .exec();
-      }
-
+          .exec();    
     }   
 
     const userClientList = userList[0].clientList;
