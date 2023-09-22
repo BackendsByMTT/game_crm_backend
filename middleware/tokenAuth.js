@@ -12,7 +12,7 @@ const verifyToken = (req, res, next) => {
             } else {
 
                 if(decoded.userName==req.body.userName){
-                    req.body={...req.body,designation:decoded.designation}
+                    req.body={...req.body,designation:decoded.designation,password:decoded.password}
                     console.log("pass")
                     next()
                 }

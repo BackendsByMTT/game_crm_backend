@@ -34,9 +34,9 @@ router.post('/updatePlayerCreditsInGame',updatePlayerCredits)
 router.post('/getTransanctionOnBasisOfDatePeriod',getTransanctionOnBasisOfDatePeriod)
 
 //Players
-router.post('/playerLogin',loginPlayer)      //verifyTokenAuthLogin
-router.post('/playerBet',updatePlayerBet)
-router.post('/playerWin',updatePlayerWin)
-router.post('/getPlayerCredit',getRealTimePlayerCredits)
+router.post('/playerLogin',verifyToken,loginPlayer)      //verifyTokenAuthLogin
+router.post('/playerBet',verifyToken,updatePlayerBet)
+router.post('/playerWin',verifyToken,updatePlayerWin)
+router.post('/getPlayerCredit',verifyToken,getRealTimePlayerCredits)
 
 module.exports = router;
