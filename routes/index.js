@@ -1,6 +1,7 @@
 const { sendOtp, otpVerification, resetPassword } = require("../controllers/company_reset_password");
 const { loginPlayer, updatePlayerBet, updatePlayerWin, getRealTimePlayerCredits } = require("../controllers/players");
 const { loginUser, getClientList, addClient, deleteClient, companyCreation, transactions, getRealTimeCredits,  updateClientCredits, updateClientPassword, updateClientActivity, updatePlayerCredits, getTransanctionOnBasisOfDatePeriod } = require("../controllers/user");
+const { verifyTokenPlayer } = require("../middleware/palyerTokenAuth");
 const { verifyToken } = require("../middleware/tokenAuth");
 const { verifyTokenAuthLogin } = require("../middleware/tokenAuthLogin");
 const User = require("../models/userSchema");
@@ -35,8 +36,8 @@ router.post('/getTransanctionOnBasisOfDatePeriod',getTransanctionOnBasisOfDatePe
 
 //Players
 router.post('/playerLogin',loginPlayer)      //verifyTokenAuthLogin
-router.post('/playerBet',updatePlayerBet)
-router.post('/playerWin',updatePlayerWin)
-router.post('/getPlayerCredit',getRealTimePlayerCredits)
+router.post('/playerBet',verifyTokenPlayer,updatePlayerBet)
+router.post('/playerWin',verifyTokenPlayer,updatePlayerWin)
+router.post('/getPlayerCredit',verifyTokenPlayer,getRealTimePlayerCredits)
 
 module.exports = router;
