@@ -7,15 +7,16 @@ const Transaction = require("../models/transaction");
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const loginPlayer = async (req, res) => {
-    console.log("req", req.body)
     try {
         const user = await User.findOne({ userName: req.body.userName }, 'userName password activeStatus designation credits');
-        console.log("user", user)
         if (!user)
             return res.status(201).json({ error: "Yor are not registered kindly contact your owner" });
         if (user.designation != 'player')
             return res.status(201).json({ error: "Yor are not registered kindly contact your owner" });
-        if (user.password != req.body.password)
+        
+        const password = jwt.verify(user.password, process.env.CLIENT_ADD_PASSWORD);
+
+        if (password != req.body.password)
             return res.status(201).json({ error: "Wrong credentials" })
 
         if (!user.activeStatus)
@@ -34,7 +35,6 @@ const loginPlayer = async (req, res) => {
 }
 
 const getRealTimePlayerCredits = async (req, res) => {
-    console.log("getCred",req.body)
     try {
         const user = await User.findOne({ userName: req.body.userName }, 'credits');
         console.log(req.body.userName, user.credits)
@@ -47,7 +47,6 @@ const getRealTimePlayerCredits = async (req, res) => {
 
 
 const updatePlayerBet = async (req, res) => {
-    console.log("hjh",req.body)
     try {
         if (req.body.credits >= 0)
             return res.status(201).json({ error: "Bet Cant be positive or 0" })
@@ -119,9 +118,7 @@ const updatePlayerWin = async (req, res) => {
 
 
 const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
-    console.log("getBasisOfDate", req.body)
     try {
-
         const transactions = await Transaction.find({ $and: [{ $or: [{ creditorDesignation: req.body.designation }, { debitorDesignation: req.body.designation }] }, { createdAtDate: { $gte: req.body.startDate, $lte: req.body.endDate } }] })
         const transactionsFiltered = transactions.map((items) => {
             if (items.creditor == req.body.userName)
@@ -134,8 +131,6 @@ const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
         if (transactionsFiltered)
             return res.status(200).json({ transactionsFiltered })
         return res.status(201).json({ error: "unable to find transactions try again" })
-
-
     } catch (err) {
         return res.status(500).json(err)
     }

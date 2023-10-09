@@ -18,10 +18,13 @@ const companyCreation = async (req, res) => {
     if (await User.findOne({ email: req.body.email }))
       return res.status(201).json({ error: "This email already registered" });
 
+    const password = jwt.sign(req.body.password, process.env.CLIENT_ADD_PASSWORD);
+
+
     const company = await User.create({
       userName: req.body.userName,
-      password: req.body.password,
-      credits: Number.POSITIVE_INFINITY,
+      password,
+      credits: 99999999999999,
       designation: "company",
       activeStatus: true,
     });
@@ -33,16 +36,21 @@ const companyCreation = async (req, res) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const loginUser = async (req, res) => {
+  
   try {
     const user = await User.findOne(
       { userName: req.body.userName },
       "userName password activeStatus designation credits"
     );
+
     if (!user)
       return res
         .status(201)
         .json({ error: "Yor are not registered kindly contact your owner" });
-    if (user.password != req.body.password)
+
+    const password = jwt.verify(user.password, process.env.CLIENT_ADD_PASSWORD);
+
+    if (password != req.body.password)
       return res.status(201).json({ error: "Wrong credentials" });
 
     if (!user.activeStatus) return res.status(204).json({});
@@ -82,7 +90,6 @@ const loginUser = async (req, res) => {
 const getRealTimeCredits = async (req, res) => {
   try {
     const user = await User.findOne({ userName: req.body.userName }, "credits");
-    console.log(req.body.userName, user.credits);
     return res.status(200).json({ credits: user.credits });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -90,7 +97,6 @@ const getRealTimeCredits = async (req, res) => {
 };
 
 const getClientList = async (req, res) => {
-  console.log("pageNumber", req.body);
   const page = parseInt(req.body.pageNumber) || 1;
   const limit = parseInt(req.body.limit) || 10;
 
@@ -104,7 +110,7 @@ const getClientList = async (req, res) => {
       {
         $project: {
           clientCount: { $size: "$clientList" },
-          designation:1
+          designation: 1,
         },
       },
     ]);
@@ -129,34 +135,47 @@ const getClientList = async (req, res) => {
       };
     }
 
-    var userList = {}
-    if(user[0].designation=='subDistributer'){
-        userList = await User.find({ userName: req.body.userName })
-          .populate({
-            path: "clientList",
-            match: {activeStatus:req.body.isAll?{$in:[true,false]}:req.body.isActive ,designation: req.body.isAllClients ?{$in:['store','player']}:(req.body.isStorePlayers?"store":'player') },
-            select:
-              "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
-            options: {
-              limit: limit,
-              skip: startIndex,
-            },
-          })
-          .exec();   
-    }else{
-        userList = await User.find({ userName: req.body.userName })
-          .populate({
-            path: "clientList",
-            match:{activeStatus:req.body.isAll?{$in:[true,false]}:req.body.isActive},
-            select:
-              "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
-            options: {
-              limit: limit,
-              skip: startIndex,
-            },
-          })
-          .exec();    
-    }   
+    var userList = {};
+    if (user[0].designation == "subDistributer") {
+      userList = await User.find({ userName: req.body.userName })
+        .populate({
+          path: "clientList",
+          match: {
+            activeStatus: req.body.isAll
+              ? { $in: [true, false] }
+              : req.body.isActive,
+            designation: req.body.isAllClients
+              ? { $in: ["store", "player"] }
+              : req.body.isStorePlayers
+              ? "store"
+              : "player",
+          },
+          select:
+            "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
+          options: {
+            limit: limit,
+            skip: startIndex,
+          },
+        })
+        .exec();
+    } else {
+      userList = await User.find({ userName: req.body.userName })
+        .populate({
+          path: "clientList",
+          match: {
+            activeStatus: req.body.isAll
+              ? { $in: [true, false] }
+              : req.body.isActive,
+          },
+          select:
+            "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
+          options: {
+            limit: limit,
+            skip: startIndex,
+          },
+        })
+        .exec();
+    }
 
     const userClientList = userList[0].clientList;
 
@@ -173,7 +192,7 @@ const getClientList = async (req, res) => {
 };
 
 const updateClientCredits = async (req, res) => {
-  console.log("update", req.body);
+  console.log("upda",req.bo)
   try {
     const clientUser = await User.findOne({
       userName: req.body.clientUserName,
@@ -260,8 +279,6 @@ const updateClientCredits = async (req, res) => {
 };
 
 const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
-  console.log("getBasisOfDate", req.body);
-
   const page = parseInt(req.body.pageNumber) || 1;
   const limit = parseInt(req.body.limit) || 20;
 
@@ -438,12 +455,16 @@ const updatePlayerCredits = async (req, res) => {
 };
 
 const updateClientPassword = async (req, res) => {
-  console.log("updatePass", req.body);
   try {
+    const password = jwt.sign(
+       req.body.password ,
+      process.env.CLIENT_ADD_PASSWORD
+    );
+
     const updatedClient = await User.findOneAndUpdate(
       { userName: req.body.clientUserName },
       {
-        password: req.body.password,
+        password,
       },
       { new: true }
     );
@@ -456,7 +477,6 @@ const updateClientPassword = async (req, res) => {
 };
 
 const updateClientActivity = async (req, res) => {
-  console.log("updatePass", req.body);
   try {
     const updatedClient = await User.findOneAndUpdate(
       { userName: req.body.clientUserName },
@@ -476,7 +496,6 @@ const updateClientActivity = async (req, res) => {
 };
 
 const deleteClient = async (req, res) => {
-  console.log("delete", req.body);
   try {
     const deletedClient = await User.findOneAndDelete({
       userName: req.body.clientUserName,
@@ -491,7 +510,6 @@ const deleteClient = async (req, res) => {
 ////////////////////////////////////////////////////////////////////////////
 
 async function addClientToUserList(userId, clientId) {
-  console.log("add user client to list");
   try {
     const updatedUserClients = await User.findOneAndUpdate(
       { userName: userId },
@@ -508,33 +526,31 @@ async function addClientToUserList(userId, clientId) {
 }
 
 const addClient = async (req, res) => {
-  console.log("addClient", req.body);
   try {
     if (await User.findOne({ userName: req.body.clientUserName }))
       return res.status(201).json({ error: "This username already exist" });
 
-    var designation =""
+    var designation = "";
 
-    if(req.body.designation == 'subDistributer' ) {
-        if(!req.body.isPlayer)
-            designation = clientDesignation[req.body.designation]
-        else designation = "player"
+    if (req.body.designation == "subDistributer") {
+      if (!req.body.isPlayer)
+        designation = clientDesignation[req.body.designation];
+      else designation = "player";
+    } else designation = clientDesignation[req.body.designation];
 
-
-    }   
-    else designation = clientDesignation[req.body.designation]
-
-    console.log("newClientDes",designation)
+    const password = jwt.sign(
+      req.body.password ,
+      process.env.CLIENT_ADD_PASSWORD
+    );
 
     const newClient = await User.create({
       userName: req.body.clientUserName,
-      password: req.body.password,
+      password,
       nickName: req.body.clientNickName,
       designation,
     });
 
     if (newClient) {
-        console.log("newClient",newClient)
       await addClientToUserList(req.body.userName, newClient._id);
       return res.status(200).json({});
     } else return res.status(201).json({});
@@ -544,7 +560,6 @@ const addClient = async (req, res) => {
 };
 
 const transactions = async (req, res) => {
-  console.log("hisTrans", console.log(req.body));
   try {
     const user = await User.findOne({ userName: req.body.clientUserName });
     const transactions = await user.populate("transactions");
