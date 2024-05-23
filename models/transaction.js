@@ -27,7 +27,7 @@ const transactionSchema = new mongoose.Schema({
     createdAtTime: {
         type: String,
         default: () => {
-            const istOffset = 5.5 * 60 * 60 * 1000; // Indian Standard Time offset in milliseconds (5 hours and 30 minutes)
+            const istOffset = 5.5 * 60 * 60 * 1000; 
             const istDate = new Date(Date.now() + istOffset);
             return istDate.toISOString().split('T')[1];
         },

@@ -18,8 +18,7 @@ const companyCreation = async (req, res) => {
     if (await User.findOne({ email: req.body.email }))
       return res.status(201).json({ error: "This email already registered" });
 
-    const password = jwt.sign(req.body.password, process.env.CLIENT_ADD_PASSWORD);
-
+    const password = jwt.sign(req.body.password, process.env.JWT_SECRET);
 
     const company = await User.create({
       userName: req.body.userName,
@@ -36,7 +35,6 @@ const companyCreation = async (req, res) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const loginUser = async (req, res) => {
-  
   try {
     const user = await User.findOne(
       { userName: req.body.userName },
@@ -48,7 +46,7 @@ const loginUser = async (req, res) => {
         .status(201)
         .json({ error: "Yor are not registered kindly contact your owner" });
 
-    const password = jwt.verify(user.password, process.env.CLIENT_ADD_PASSWORD);
+    const password = jwt.verify(user.password, process.env.JWT_SECRET);
 
     if (password != req.body.password)
       return res.status(201).json({ error: "Wrong credentials" });
@@ -192,7 +190,7 @@ const getClientList = async (req, res) => {
 };
 
 const updateClientCredits = async (req, res) => {
-  console.log("upda",req.bo)
+  console.log("upda", req.bo);
   try {
     const clientUser = await User.findOne({
       userName: req.body.clientUserName,
@@ -456,10 +454,7 @@ const updatePlayerCredits = async (req, res) => {
 
 const updateClientPassword = async (req, res) => {
   try {
-    const password = jwt.sign(
-       req.body.password ,
-      process.env.CLIENT_ADD_PASSWORD
-    );
+    const password = jwt.sign(req.body.password, process.env.JWT_SECRET);
 
     const updatedClient = await User.findOneAndUpdate(
       { userName: req.body.clientUserName },
@@ -538,10 +533,7 @@ const addClient = async (req, res) => {
       else designation = "player";
     } else designation = clientDesignation[req.body.designation];
 
-    const password = jwt.sign(
-      req.body.password ,
-      process.env.CLIENT_ADD_PASSWORD
-    );
+    const password = jwt.sign(req.body.password, process.env.JWT_SECRET);
 
     const newClient = await User.create({
       userName: req.body.clientUserName,
