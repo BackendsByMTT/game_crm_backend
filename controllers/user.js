@@ -11,181 +11,12 @@ const clientDesignation = {
   store: "player",
 };
 
-const companyCreation = async (req, res) => {
-  try {
-    if (await User.findOne({ userName: req.body.userName }))
-      return res.status(201).json({ error: "This username not available" });
-    if (await User.findOne({ email: req.body.email }))
-      return res.status(201).json({ error: "This email already registered" });
-
-    const password = jwt.sign(req.body.password, process.env.JWT_SECRET);
-
-    const company = await User.create({
-      userName: req.body.userName,
-      password,
-      credits: 99999999999999,
-      designation: "company",
-      activeStatus: true,
-    });
-    return res.status(200).json(company);
-  } catch (err) {
-    return res.status(500).json({ error: err });
-  }
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const loginUser = async (req, res) => {
-  try {
-    const user = await User.findOne(
-      { userName: req.body.userName },
-      "userName password activeStatus designation credits"
-    );
-
-    if (!user)
-      return res
-        .status(201)
-        .json({ error: "Yor are not registered kindly contact your owner" });
-
-    const password = jwt.verify(user.password, process.env.JWT_SECRET);
-
-    if (password != req.body.password)
-      return res.status(201).json({ error: "Wrong credentials" });
-
-    if (!user.activeStatus) return res.status(204).json({});
-
-    const istOffset = 5.5 * 60 * 60 * 1000; // Indian Standard Time offset in milliseconds (5 hours and 30 minutes)
-    const istDate = new Date(Date.now() + istOffset);
-
-    const updatedUserLoginTime = await User.findOneAndUpdate(
-      { userName: req.body.userName },
-      { lastLogin: istDate.toISOString() }
-    );
-    const updatedUserLoginTimes = await User.findOneAndUpdate(
-      { userName: req.body.userName },
-      { loginTimes: updatedUserLoginTime.loginTimes + 1 }
-    );
-
-    const token = jwt.sign(
-      {
-        userName: req.body.userName,
-        password: req.body.password,
-        designation: user.designation,
-      },
-      process.env.JWT_SECRET
-    );
-    return res.status(200).json({
-      userName: user.userName,
-      nickName: user.nickName,
-      designation: user.designation,
-      token: token,
-      credits: user.credits,
-    });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
 const getRealTimeCredits = async (req, res) => {
   try {
     const user = await User.findOne({ userName: req.body.userName }, "credits");
     return res.status(200).json({ credits: user.credits });
   } catch (err) {
     return res.status(500).json({ error: err.message });
-  }
-};
-
-const getClientList = async (req, res) => {
-  const page = parseInt(req.body.pageNumber) || 1;
-  const limit = parseInt(req.body.limit) || 10;
-
-  const startIndex = (page - 1) * limit;
-
-  const results = {};
-
-  try {
-    const user = await User.aggregate([
-      { $match: { userName: req.body.userName } },
-      {
-        $project: {
-          clientCount: { $size: "$clientList" },
-          designation: 1,
-        },
-      },
-    ]);
-
-    const totalClientCount = user[0].clientCount;
-
-    if (!totalClientCount) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    if (startIndex + limit < totalClientCount) {
-      results.next = {
-        page: page + 1,
-        limit: limit,
-      };
-    }
-
-    if (startIndex > 0) {
-      results.previous = {
-        page: page - 1,
-        limit: limit,
-      };
-    }
-
-    var userList = {};
-    if (user[0].designation == "subDistributer") {
-      userList = await User.find({ userName: req.body.userName })
-        .populate({
-          path: "clientList",
-          match: {
-            activeStatus: req.body.isAll
-              ? { $in: [true, false] }
-              : req.body.isActive,
-            designation: req.body.isAllClients
-              ? { $in: ["store", "player"] }
-              : req.body.isStorePlayers
-              ? "store"
-              : "player",
-          },
-          select:
-            "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
-          options: {
-            limit: limit,
-            skip: startIndex,
-          },
-        })
-        .exec();
-    } else {
-      userList = await User.find({ userName: req.body.userName })
-        .populate({
-          path: "clientList",
-          match: {
-            activeStatus: req.body.isAll
-              ? { $in: [true, false] }
-              : req.body.isActive,
-          },
-          select:
-            "userName nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
-          options: {
-            limit: limit,
-            skip: startIndex,
-          },
-        })
-        .exec();
-    }
-
-    const userClientList = userList[0].clientList;
-
-    if (!userClientList) {
-      return res.status(201).json({ error: "No Clients Found" });
-    }
-
-    return res
-      .status(200)
-      .json({ userClientList, totalPageCount: totalClientCount });
-  } catch (err) {
-    return res.status(500).json(err);
   }
 };
 
@@ -452,24 +283,7 @@ const updatePlayerCredits = async (req, res) => {
   }
 };
 
-const updateClientPassword = async (req, res) => {
-  try {
-    const password = jwt.sign(req.body.password, process.env.JWT_SECRET);
 
-    const updatedClient = await User.findOneAndUpdate(
-      { userName: req.body.clientUserName },
-      {
-        password,
-      },
-      { new: true }
-    );
-
-    if (updatedClient) return res.status(200).json({});
-    return res.status(201).json({ error: "unable to update client try again" });
-  } catch (err) {
-    return res.status(500).json(err);
-  }
-};
 
 const updateClientActivity = async (req, res) => {
   try {
@@ -501,24 +315,6 @@ const deleteClient = async (req, res) => {
     return res.status(500).json(err);
   }
 };
-
-////////////////////////////////////////////////////////////////////////////
-
-async function addClientToUserList(userId, clientId) {
-  try {
-    const updatedUserClients = await User.findOneAndUpdate(
-      { userName: userId },
-      { $push: { clientList: clientId } },
-      { new: true }
-    );
-    if (!updatedUserClients) {
-      res.status(201).json({ error: "failed to add" });
-    }
-    return updatedUserClients;
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
 
 const addClient = async (req, res) => {
   try {
@@ -563,8 +359,6 @@ const transactions = async (req, res) => {
 };
 
 module.exports = {
-  companyCreation,
-  loginUser,
   updatePlayerCredits,
   updateClientActivity,
   updateClientPassword,

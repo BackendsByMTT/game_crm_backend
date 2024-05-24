@@ -1,32 +1,27 @@
-var jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
-    
-    const cookie = req.body.cookie
+  const cookie =
+    req.cookies.userToken ||
+    req.headers.cookie
+      ?.split("; ")
+      .find((row) => row.startsWith("userToken="))
+      ?.split("=")[1];
 
-    if (cookie) {
-        jwt.verify(cookie, process.env.JWT_SECRET, (err, decoded) => {
-            if (err) {
-                console.error('Token verification failed:', err.message);
-                return res.status(201).json({ error: "You are not authenticated" })
-            } else {
-                console.log("ty",decoded.userName,req.body.userName)
-
-                if(decoded.userName==req.body.userName){
-                    req.body={...req.body,designation:decoded.designation}
-                    console.log("pass")
-                    next()
-                }
-                else{
-                    console.log("fail")
-                    return res.status(201).json({ error: "You are not authenticatedty" })
-                }
-            }
-        });
-      
-      }else{
-        return res.status(201).json({ error: "You are not authenticatedd" })
+  if (cookie) {
+    jwt.verify(cookie, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        console.error("Token verification failed:", err.message);
+        return res.status(401).json({ error: "You are not authenticated" });
+      } else {
+        req.body = { ...req.body, creatorDesignation: decoded.designation };
+        console.log({ ...req.body });
+        next();
       }
-}
+    });
+  } else {
+    return res.status(401).json({ error: "You are not authenticated" });
+  }
+};
 
-module.exports = { verifyToken }
+module.exports = { verifyToken };
