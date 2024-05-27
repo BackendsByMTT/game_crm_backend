@@ -30,37 +30,46 @@ const getRealTimeCredits = async (req, res) => {
 //{UPDATE THE USER CREDITS}
 const updateClientCredits = async (req, res) => {
   const { clientUserName } = req.params;
+  const { credits, username } = req.body;
 
   try {
-    const clientUser = await User.findOne({
-      username: clientUserName,
-    });
-    var clientUserCredits =
-      parseInt(clientUser.credits) + parseInt(req.body.credits);
-    //GETTING THE USERNAME FROM MIDDLEWARE
-    const user = await User.findOne({ username: req.body.username });
-    var userCredits = parseInt(user.credits) - parseInt(req.body.credits);
+    const user = await User.findOne({ username: username });
+
+    const clientUser = await User.findOne({ username: clientUserName });
+    let clientUserCredits = 0;
+    let userCredits = 0;
+
+    if (clientUser && typeof clientUser.credits === "number") {
+      clientUserCredits = clientUser.credits + parseInt(credits);
+    } else {
+      return res.status(400).json({ error: "Invalid client user credits." });
+    }
+
+    if (
+      typeof credits === "string" &&
+      !isNaN(parseFloat(credits)) &&
+      isFinite(credits)
+    ) {
+      userCredits = user.credits - parseInt(credits);
+    } else {
+      return res.status(400).json({ error: "Invalid credits value." });
+    }
+
     if (user.designation !== "company") {
-      if (req.body.credits >= 0) {
-        if (userCredits < 0)
-          return res.status(400).json({
-            error: "Insufficient credits for this transaction.",
-          });
-      } else if (clientUserCredits < 0)
+      if (userCredits < 0)
         return res.status(400).json({
-          error:
-            "Invalid credit update. Client's credits would become negative.",
+          error: "Insufficient credits for this transaction.",
         });
-    } else if (clientUserCredits < 0)
+    } else if (clientUserCredits <= 0)
       return res.status(400).json({
         error: "Invalid credit update. Client's credits would become negative.",
       });
 
     const transaction = await Transaction.create({
-      credit: req.body.credits,
-      creditorDesignation: req.body.designation,
+      credit: credits,
+      creditorDesignation: req.body.creatorDesignation,
       debitorDesignation: clientDesignation[req.body.creatorDesignation],
-      creditor: req.body.username,
+      creditor: username,
       debitor: clientUserName,
     });
 
@@ -71,21 +80,37 @@ const updateClientCredits = async (req, res) => {
     );
 
     const updatedClient = await User.findOneAndUpdate(
-      { clientUserName },
+      { username: clientUserName },
       {
-        $inc: {
-          credits: parseInt(req.body.credits),
-          totalRecharged: req.body.credits > 0 ? req.body.credits : 0,
-          totalRedeemed: req.body.credits < 0 ? req.body.credits : 0,
-        },
+        credits: clientUserCredits,
       },
       { new: true }
     );
 
+    if (credits > 0) {
+      const updatedClientRecharge = await User.findOneAndUpdate(
+        { username: clientUserName },
+        {
+          totalRecharged: clientUser.totalRecharged + parseInt(credits),
+        },
+        { new: true }
+      );
+    }
+
+    if (credits < 0) {
+      const updatedClientReedem = await User.findOneAndUpdate(
+        { username: clientUserName },
+        {
+          totalRedeemed: clientUser.totalRedeemed + parseInt(credits),
+        },
+        { new: true }
+      );
+    }
+
     const updatedUser = await User.findOneAndUpdate(
-      { username: req.body.username },
+      { username: username },
       {
-        $inc: { credits: parseInt(req.body.credits) },
+        credits: userCredits,
       },
       { new: true }
     );
@@ -102,6 +127,7 @@ const updateClientCredits = async (req, res) => {
       .json({ error: "Internal Server Error", details: err.message });
   }
 };
+
 //{getTransanctionOnBasisOfDatePeriod OF USER}
 const getTransanctionOnBasisOfDatePeriod = async (req, res) => {
   const {
@@ -288,14 +314,15 @@ const updatePlayerCredits = async (req, res) => {
 };
 //{GET TRANSACTIONS OF USERS}
 const transactions = async (req, res) => {
+  const { clientUserName } = req.params;
   try {
-    const user = await User.findOne({ userName: req.params.clientUserName });
+    const user = await User.findOne({ username: clientUserName });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    await user.populate("transactions").execPopulate();
+    await user.populate("transactions");
     console.log(user.transactions);
     return res.status(200).json(user.transactions);
   } catch (err) {
@@ -303,6 +330,7 @@ const transactions = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 module.exports = {
   getRealTimeCredits,
   updateClientCredits,

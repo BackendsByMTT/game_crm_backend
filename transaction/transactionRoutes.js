@@ -28,7 +28,11 @@ transactionRoutes.post(
 );
 
 //ALL GET REQ FOR USERS
-transactionRoutes.get("/:clientUserName/transactions", transactions);
+transactionRoutes.get(
+  "/transactions/:clientUserName",
+  verifyToken,
+  transactions
+);
 //ALL PUT REQ FOR USERS
 
 module.exports = transactionRoutes;
