@@ -295,7 +295,7 @@ const deleteClient = async (req, res) => {
 //{change user password}
 const updateClientPassword = async (req, res) => {
   try {
-    const username = req.params.username;
+    const {username} = req.params;
     if (!username) {
       return res.status(400).json({ error: "Username is required." });
     }
@@ -327,20 +327,28 @@ const updateClientPassword = async (req, res) => {
 };
 const updateClientStatus = async (req, res) => {
   try {
+    const { clientUserName } = req.params;
+    const { activeStatus } = req.body;
+
     const updatedClient = await User.findOneAndUpdate(
-      { userName: req.body.clientUserName },
+      { userName: clientUserName },
       {
-        activeStatus: !req.body.activeStatus,
+        activeStatus: !activeStatus,
       },
       { new: true }
     );
 
-    if (updatedClient) return res.status(200).json({});
-    return res
-      .status(201)
-      .json({ error: "unable to update client activity try again" });
+    if (updatedClient) {
+      return res
+        .status(200)
+        .json({ message: "Client status updated successfully" });
+    } else {
+      return res.status(404).json({ error: "Client not found" });
+    }
   } catch (err) {
-    return res.status(500).json(err);
+    return res
+      .status(500)
+      .json({ error: "Internal server error", details: err });
   }
 };
 

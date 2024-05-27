@@ -5,6 +5,7 @@ const routes = require("./routes");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const userRoutes = require("./user/userRoutes.js");
+const transactionRoutes = require("./transaction/transactionRoutes.js");
 require("dotenv").config();
 
 const corsOptions = {
@@ -34,5 +35,6 @@ app.get("/", (req, res) => {
 });
 //OTHER ROUTES
 app.use("/api/users", userRoutes);
+app.use("/api/transaction", transactionRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log("server started at ", PORT));

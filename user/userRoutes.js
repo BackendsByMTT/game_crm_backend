@@ -7,6 +7,7 @@ const {
   getClientList,
   deleteClient,
   updateClientPassword,
+  updateClientStatus,
 } = require("./userController");
 //ALL USERS POST REQUEST
 userRoutes.post("/createCompany", companyCreation);
@@ -17,8 +18,14 @@ userRoutes.post("/getClientList", getClientList);
 userRoutes.delete("/clients/:clientUserName", verifyToken, deleteClient);
 //ALL PUT REQ FOR USERS
 userRoutes.put(
-  "/updateClientPassword/:username",
+  "/updateClientPassword/:clientUserName",
   verifyToken,
   updateClientPassword
 );
+userRoutes.put(
+  "/clientsStatus/:clientUserName",
+  verifyToken,
+  updateClientStatus
+);
+
 module.exports = userRoutes;

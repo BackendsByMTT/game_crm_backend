@@ -11,17 +11,7 @@ const clientDesignation = {
   store: "player",
 };
 
-const getRealTimeCredits = async (req, res) => {
-  try {
-    const user = await User.findOne({ userName: req.body.userName }, "credits");
-    return res.status(200).json({ credits: user.credits });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
 const updateClientCredits = async (req, res) => {
-  console.log("upda", req.bo);
   try {
     const clientUser = await User.findOne({
       userName: req.body.clientUserName,
@@ -280,70 +270,6 @@ const updatePlayerCredits = async (req, res) => {
       .json({ error: "unable to update Player credits try again" });
   } catch (err) {
     return res.status(500).json(err);
-  }
-};
-
-
-
-const updateClientActivity = async (req, res) => {
-  try {
-    const updatedClient = await User.findOneAndUpdate(
-      { userName: req.body.clientUserName },
-      {
-        activeStatus: !req.body.activeStatus,
-      },
-      { new: true }
-    );
-
-    if (updatedClient) return res.status(200).json({});
-    return res
-      .status(201)
-      .json({ error: "unable to update client activity try again" });
-  } catch (err) {
-    return res.status(500).json(err);
-  }
-};
-
-const deleteClient = async (req, res) => {
-  try {
-    const deletedClient = await User.findOneAndDelete({
-      userName: req.body.clientUserName,
-    });
-    if (deletedClient) return res.status(200).json({});
-    return res.status(201).json({ error: "Unable to delete client try again" });
-  } catch (err) {
-    return res.status(500).json(err);
-  }
-};
-
-const addClient = async (req, res) => {
-  try {
-    if (await User.findOne({ userName: req.body.clientUserName }))
-      return res.status(201).json({ error: "This username already exist" });
-
-    var designation = "";
-
-    if (req.body.designation == "subDistributer") {
-      if (!req.body.isPlayer)
-        designation = clientDesignation[req.body.designation];
-      else designation = "player";
-    } else designation = clientDesignation[req.body.designation];
-
-    const password = jwt.sign(req.body.password, process.env.JWT_SECRET);
-
-    const newClient = await User.create({
-      userName: req.body.clientUserName,
-      password,
-      nickName: req.body.clientNickName,
-      designation,
-    });
-
-    if (newClient) {
-      await addClientToUserList(req.body.userName, newClient._id);
-      return res.status(200).json({});
-    } else return res.status(201).json({});
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
   }
 };
 
