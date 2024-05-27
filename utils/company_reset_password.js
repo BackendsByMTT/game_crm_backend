@@ -1,7 +1,8 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 const userModel = require("../user/userModel");
-const { use } = require("../routes");
+
+const bcrypt = require("bcrypt");
 
 require("dotenv").config();
 
@@ -19,13 +20,14 @@ const otpStore = {};
 
 // Route to send OTP to user's email
 const sendOtp = async (req, res) => {
-  const user = await userModel.findOne({ userName: req.body.userName });
-  if (!user) return res.status(201).json({ error: "userModel Not Found" });
-  if (user.email !== req.body.email)
-    return res.status(201).json({ error: "Wrong Credentials" });
+  const { username, email } = req.body;
+  const user = await userModel.findOne({ username });
+  if (!user) return res.status(404).json({ error: "User not found" });
+  if (user.email !== email)
+    return res.status(400).json({ error: "Incorrect email for the user" });
   // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore[user.email] = otp;
+  otpStore[email] = otp;
 
   // Create reusable transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
@@ -41,7 +43,7 @@ const sendOtp = async (req, res) => {
   // Email options
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: user.email,
+    to: email,
     subject: "Password Reset OTP",
     text: `Your OTP for password reset is: ${otp}`,
   };
@@ -60,27 +62,27 @@ const sendOtp = async (req, res) => {
 
 // Route to reset password using OTP
 const otpVerification = async (req, res) => {
-  console.log("rees", req.body);
-
   const { email, otp } = req.body;
-
   if (otp !== otpStore[email]) {
-    return res.status(201).json({ error: "Invalid OTP" });
+    return res.status(400).json({ error: "Invalid OTP" });
   } else {
-    return res.status(200).json({ message: "OTP succesfully verified" });
+    return res.status(200).json({ message: "OTP successfully verified" });
   }
 };
 
 const resetPassword = async (req, res) => {
-  const updatedComapnyPassword = await userModel.findOneAndUpdate(
-    { userName: req.body.userName },
-    {
-      password: req.body.newPassword,
-    },
+  const { username, email, newPassword } = req.body;
+  const ChangedPassword = await bcrypt.hash(newPassword, 10);
+  const updatedUser = await userModel.findOneAndUpdate(
+    { username },
+    { password: ChangedPassword },
     { new: true }
   );
+  if (!updatedUser) {
+    return res.status(404).json({ error: "User not found" });
+  }
   // Remove the OTP from the store as it is no longer needed
-  delete otpStore[req.body.email];
+  delete otpStore[email];
 
   return res.status(200).json({ message: "Password reset successfully" });
 };

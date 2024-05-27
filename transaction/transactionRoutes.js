@@ -1,11 +1,34 @@
 const transactionRoutes = require("express").Router();
 const { verifyToken } = require("../middleware/tokenAuth");
-const { getRealTimeCredits } = require("./transactionController");
+const {
+  getRealTimeCredits,
+  updateClientCredits,
+  updatePlayerCredits,
+  getTransanctionOnBasisOfDatePeriod,
+  transactions,
+} = require("./transactionController");
 //ALL USERS POST REQUEST
-transactionRoutes.post("/getRealTimeCredits", getRealTimeCredits);
+transactionRoutes.post(
+  "/getRealTimeCredits/:clientUserName",
+  getRealTimeCredits
+);
+transactionRoutes.post(
+  "/updateCredits/:clientUserName",
+  verifyToken,
+  updateClientCredits
+);
+transactionRoutes.post(
+  "/updatePlayerCreditsInGame",
+  verifyToken,
+  updatePlayerCredits
+);
+transactionRoutes.post(
+  "/getTransanctionOnBasisOfDatePeriod",
+  getTransanctionOnBasisOfDatePeriod
+);
 
-//ALL DELETE REQ FOR USERS
-
+//ALL GET REQ FOR USERS
+transactionRoutes.get("/:clientUserName/transactions", transactions);
 //ALL PUT REQ FOR USERS
 
 module.exports = transactionRoutes;

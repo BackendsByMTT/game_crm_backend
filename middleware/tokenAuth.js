@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-
 const verifyToken = (req, res, next) => {
   const cookie =
     req.cookies.userToken ||
@@ -14,8 +13,12 @@ const verifyToken = (req, res, next) => {
         console.error("Token verification failed:", err.message);
         return res.status(401).json({ error: "You are not authenticated" });
       } else {
-        req.body = { ...req.body, creatorDesignation: decoded.designation };
-        console.log({ ...req.body });
+        req.body = {
+          ...req.body,
+          creatorDesignation: decoded.designation,
+          username: decoded.username,
+        };
+      
         next();
       }
     });

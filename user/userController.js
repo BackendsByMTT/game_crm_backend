@@ -139,7 +139,7 @@ const addClient = async (req, res) => {
       finalDesignation =
         clientDesignation[req.body.designation] || "subDistributor";
     } else if (isPlayer) {
-      finalDesignation = "player";
+      finalDesignation = "player"; 
     } else {
       finalDesignation = clientDesignation[req.body.designation];
     }
@@ -185,16 +185,26 @@ async function addClientToUserList(userId, clientId) {
 }
 //{getRealTimeCredits of users}
 const getClientList = async (req, res) => {
-  const page = parseInt(req.body.pageNumber) || 1;
-  const limit = parseInt(req.body.limit) || 10;
+  const {
+    pageNumber,
+    limit,
+    username,
+    isAll,
+    isActive,
+    isAllClients,
+    isStorePlayers,
+  } = req.body;
 
-  const startIndex = (page - 1) * limit;
+  const page = parseInt(pageNumber) || 1;
+  const limitValue = parseInt(limit) || 10;
+
+  const startIndex = (page - 1) * limitValue;
 
   const results = {};
 
   try {
     const user = await User.aggregate([
-      { $match: { username: req.body.username } },
+      { $match: { username: username } },
       {
         $project: {
           clientCount: { $size: "$clientList" },
@@ -202,63 +212,59 @@ const getClientList = async (req, res) => {
         },
       },
     ]);
-
+  
     const totalClientCount = user[0].clientCount;
 
     if (!totalClientCount) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "No User Found for this client" });
     }
 
-    if (startIndex + limit < totalClientCount) {
+    if (startIndex + limitValue < totalClientCount) {
       results.next = {
         page: page + 1,
-        limit: limit,
+        limit: limitValue,
       };
     }
 
     if (startIndex > 0) {
       results.previous = {
         page: page - 1,
-        limit: limit,
+        limit: limitValue,
       };
     }
 
     var userList = {};
     if (user[0].designation == "subDistributer") {
-      userList = await User.find({ userName: req.body.username })
+      userList = await User.find({ username: username })
         .populate({
           path: "clientList",
           match: {
-            activeStatus: req.body.isAll
-              ? { $in: [true, false] }
-              : req.body.isActive,
-            designation: req.body.isAllClients
+            activeStatus: isAll ? { $in: [true, false] } : isActive,
+            designation: isAllClients
               ? { $in: ["store", "player"] }
-              : req.body.isStorePlayers
+              : isStorePlayers
               ? "store"
               : "player",
           },
           select:
             "username nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
           options: {
-            limit: limit,
+            limit: limitValue,
             skip: startIndex,
           },
         })
         .exec();
     } else {
-      userList = await User.find({ userName: req.body.username })
+      userList = await User.find({ username: username })
         .populate({
           path: "clientList",
           match: {
-            activeStatus: req.body.isAll
-              ? { $in: [true, false] }
-              : req.body.isActive,
+            activeStatus: isAll ? { $in: [true, false] } : isActive,
           },
           select:
             "username nickName activeStatus designation credits totalRedeemed totalRecharged lastLogin loginTimes",
           options: {
-            limit: limit,
+            limit: limitValue,
             skip: startIndex,
           },
         })
@@ -277,35 +283,38 @@ const getClientList = async (req, res) => {
 };
 //{DELETE CLIENT}
 const deleteClient = async (req, res) => {
-  const { clientUserName } = req.params;
+  const { username } = req.params;
   try {
     const deletedClient = await User.findOneAndDelete({
-      clientUserName,
+      clientUserName: username,
     });
     if (!deletedClient) {
       return res.status(404).json({ error: "Client not found" });
     }
     return res
       .status(204)
-      .json({ msg: `Successfully deleted client ${clientUserName}` });
+      .json({ message: `Successfully deleted client ${username}` });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
 //{change user password}
 const updateClientPassword = async (req, res) => {
+  const { changedPassword } = req.body;
+  const { clientUserName } = req.params;
+  // console.log(username);
   try {
-    const {username} = req.params;
-    if (!username) {
+    if (!clientUserName) {
       return res.status(400).json({ error: "Username is required." });
     }
-    const newPassword = req.body.newPassword;
+    const newPassword = changedPassword;
     if (!newPassword) {
       return res.status(400).json({ error: "New password is required." });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const updatedClient = await User.findOneAndUpdate(
-      { username: username },
+      { username: clientUserName },
       { password: hashedPassword },
       { new: true }
     );
@@ -331,9 +340,9 @@ const updateClientStatus = async (req, res) => {
     const { activeStatus } = req.body;
 
     const updatedClient = await User.findOneAndUpdate(
-      { userName: clientUserName },
+      { username: clientUserName },
       {
-        activeStatus: !activeStatus,
+        activeStatus: activeStatus,
       },
       { new: true }
     );
@@ -351,7 +360,6 @@ const updateClientStatus = async (req, res) => {
       .json({ error: "Internal server error", details: err });
   }
 };
-
 module.exports = {
   companyCreation,
   loginUser,
