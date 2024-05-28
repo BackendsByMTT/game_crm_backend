@@ -58,40 +58,39 @@ const companyCreation = async (req, res) => {
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
   console.log(req.body);
+
   try {
     const user = await User.findOne(
       { username },
-      "username password activeStatus designation credits"
+      "username password activeStatus designation credits lastLogin loginTimes"
     );
-    const designation = user.designation;
-    if (!user)
+
+    if (!user) {
       return res.status(404).json({ error: "User not found. Please register" });
+    }
 
-    const hashedPassword = user.password;
-    const passwordIsValid = await bcrypt.compare(password, hashedPassword);
+    const passwordIsValid = await bcrypt.compare(password, user.password);
 
-    if (!passwordIsValid)
+    if (!passwordIsValid) {
       return res.status(401).json({ error: "Invalid credentials" });
+    }
 
-    if (user.activeStatus !== true)
+    if (user.activeStatus !== true) {
       return res.status(403).json({ error: "Account is inactive" });
+    }
 
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istDate = new Date(Date.now() + istOffset);
 
-    const updatedUserLoginTime = await User.findOneAndUpdate(
-      { username },
-      { lastLogin: istDate.toISOString() }
-    );
-    const updatedUserLoginTimes = await User.findOneAndUpdate(
-      { username },
-      { loginTimes: updatedUserLoginTime.loginTimes + 1 }
-    );
+    user.lastLogin = istDate.toISOString();
+    user.loginTimes = (user.loginTimes || 0) + 1;
+
+    await user.save();
 
     const token = jwt.sign(
       {
-        username,
-        designation,
+        username: user.username,
+        designation: user.designation,
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
@@ -103,19 +102,31 @@ const loginUser = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "lax",
     });
-    // res.redirect("/dashboard");
-    return res.status(200).json({
-      username,
-      nickname: username,
-      designation: user.designation,
-      credits: user.credits,
-    });
+
+    return res.status(200).json({ message: "Login successful" });
   } catch (err) {
     return res
       .status(500)
       .json({ error: "Internal server error", details: err.message });
   }
 };
+
+//{GET CLIENT DATA AFTER LOGIN}
+const clientData = async (req, res) => {
+  const { username } = req.body;
+  try {
+    const user = await User.findOne({ username: username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
 //{Add sub users to company}
 const addClient = async (req, res) => {
   const {
@@ -165,6 +176,7 @@ const addClient = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 //{addClientToUserList from addClient}
 async function addClientToUserList(userId, clientId) {
   try {
@@ -361,6 +373,7 @@ const updateClientStatus = async (req, res) => {
 module.exports = {
   companyCreation,
   loginUser,
+  clientData,
   addClient,
   getClientList,
   deleteClient,

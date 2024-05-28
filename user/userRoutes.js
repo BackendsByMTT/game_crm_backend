@@ -8,6 +8,7 @@ const {
   deleteClient,
   updateClientPassword,
   updateClientStatus,
+  clientData,
 } = require("./userController");
 //ALL USERS POST REQUEST
 userRoutes.post("/createCompany", companyCreation);
@@ -27,5 +28,6 @@ userRoutes.put(
   verifyToken,
   updateClientStatus
 );
-
+//ALL GET REQ FOR USERS
+userRoutes.get("/userData", verifyToken, clientData);
 module.exports = userRoutes;
