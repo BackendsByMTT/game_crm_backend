@@ -13,12 +13,10 @@ const clientDesignation = {
 const companyCreation = async (req, res) => {
   const { username, password } = req.body;
 
-  // Check for required fields
   if (!username || !password) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  // Check password length
   if (password.length < 6) {
     return res
       .status(400)
@@ -26,7 +24,6 @@ const companyCreation = async (req, res) => {
   }
 
   try {
-    // Check if username already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res
@@ -42,7 +39,7 @@ const companyCreation = async (req, res) => {
       username,
       password: hashedPassword,
       credits: 1000000,
-      designation: "Company",
+      designation: "company",
       activeStatus: true,
     });
 
@@ -127,6 +124,7 @@ const addClient = async (req, res) => {
     clientNickName,
     isPlayer,
     creatorDesignation,
+    creatorUserName,
   } = req.body;
 
   try {
@@ -137,13 +135,13 @@ const addClient = async (req, res) => {
 
     if (creatorDesignation === "subDistributor" && !isPlayer) {
       finalDesignation =
-        clientDesignation[req.body.designation] || "subDistributor";
+        clientDesignation[creatorDesignation] || "subDistributor";
     } else if (isPlayer) {
-      finalDesignation = "player"; 
+      finalDesignation = "player";
     } else {
-      finalDesignation = clientDesignation[req.body.designation];
+      finalDesignation = clientDesignation[creatorDesignation];
     }
-
+    
     // console.log("Received designation:", req.body.designation);
     // console.log("Final designation:", finalDesignation);
 
@@ -157,7 +155,7 @@ const addClient = async (req, res) => {
     });
 
     if (newUser) {
-      await addClientToUserList(clientUserName, newUser._id);
+      await addClientToUserList(creatorUserName, newUser._id);
       return res.status(201).json({ message: "Client added successfully" });
     } else {
       return res.status(500).json({ error: "Failed to create client" });
@@ -212,7 +210,7 @@ const getClientList = async (req, res) => {
         },
       },
     ]);
-  
+
     const totalClientCount = user[0].clientCount;
 
     if (!totalClientCount) {
