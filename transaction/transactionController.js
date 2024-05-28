@@ -34,36 +34,38 @@ const updateClientCredits = async (req, res) => {
 
   try {
     const user = await User.findOne({ username: username });
-
     const clientUser = await User.findOne({ username: clientUserName });
-    let clientUserCredits = 0;
-    let userCredits = 0;
 
-    if (clientUser && typeof clientUser.credits === "number") {
-      clientUserCredits = clientUser.credits + parseInt(credits);
-    } else {
-      return res.status(400).json({ error: "Invalid client user credits." });
+    if (!user) {
+      return res.status(400).json({ error: "User not found." });
     }
-
+    if (!clientUser) {
+      return res.status(400).json({ error: "Client user not found." });
+    }
     if (
-      typeof credits === "string" &&
-      !isNaN(parseFloat(credits)) &&
-      isFinite(credits)
+      typeof credits !== "string" ||
+      isNaN(parseFloat(credits)) ||
+      !isFinite(credits)
     ) {
-      userCredits = user.credits - parseInt(credits);
-    } else {
       return res.status(400).json({ error: "Invalid credits value." });
     }
+    const creditValue = parseInt(credits);
+    const userCredits = user.credits - creditValue;
+    const clientUserCredits = clientUser.credits + creditValue;
 
-    if (user.designation !== "company") {
-      if (userCredits < 0)
-        return res.status(400).json({
-          error: "Insufficient credits for this transaction.",
+    if (user.designation !== "company" && userCredits < 0) {
+      return res
+        .status(400)
+        .json({ error: "Insufficient credits for this transaction." });
+    }
+    if (clientUserCredits < 0) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid credit update. Client's credits would become negative.",
         });
-    } else if (clientUserCredits <= 0)
-      return res.status(400).json({
-        error: "Invalid credit update. Client's credits would become negative.",
-      });
+    }
 
     const transaction = await Transaction.create({
       credit: credits,
@@ -73,53 +75,28 @@ const updateClientCredits = async (req, res) => {
       debitor: clientUserName,
     });
 
-    const updateClientTransaction = await User.findOneAndUpdate(
-      { username: clientUserName },
-      { $push: { transactions: transaction._id } },
-      { new: true }
-    );
-
-    const updatedClient = await User.findOneAndUpdate(
+    await User.findOneAndUpdate(
       { username: clientUserName },
       {
+        $push: { transactions: transaction._id },
         credits: clientUserCredits,
+        ...(creditValue > 0 && {
+          totalRecharged: clientUser.totalRecharged + creditValue,
+        }),
+        ...(creditValue < 0 && {
+          totalRedeemed: clientUser.totalRedeemed + creditValue,
+        }),
       },
       { new: true }
     );
 
-    if (credits > 0) {
-      const updatedClientRecharge = await User.findOneAndUpdate(
-        { username: clientUserName },
-        {
-          totalRecharged: clientUser.totalRecharged + parseInt(credits),
-        },
-        { new: true }
-      );
-    }
-
-    if (credits < 0) {
-      const updatedClientReedem = await User.findOneAndUpdate(
-        { username: clientUserName },
-        {
-          totalRedeemed: clientUser.totalRedeemed + parseInt(credits),
-        },
-        { new: true }
-      );
-    }
-
-    const updatedUser = await User.findOneAndUpdate(
+    await User.findOneAndUpdate(
       { username: username },
-      {
-        credits: userCredits,
-      },
+      { credits: userCredits },
       { new: true }
     );
 
-    if (updatedUser)
-      return res.status(200).json({ message: "Credits updated successfully." });
-    return res
-      .status(500)
-      .json({ error: "Unable to update client. Please try again." });
+    return res.status(200).json({ message: "Credits updated successfully." });
   } catch (err) {
     console.error(err);
     return res

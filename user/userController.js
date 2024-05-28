@@ -124,7 +124,7 @@ const addClient = async (req, res) => {
     clientNickName,
     isPlayer,
     creatorDesignation,
-    creatorUserName,
+    username,
   } = req.body;
 
   try {
@@ -141,7 +141,7 @@ const addClient = async (req, res) => {
     } else {
       finalDesignation = clientDesignation[creatorDesignation];
     }
-    
+
     // console.log("Received designation:", req.body.designation);
     // console.log("Final designation:", finalDesignation);
 
@@ -155,7 +155,7 @@ const addClient = async (req, res) => {
     });
 
     if (newUser) {
-      await addClientToUserList(creatorUserName, newUser._id);
+      await addClientToUserList(username, newUser._id);
       return res.status(201).json({ message: "Client added successfully" });
     } else {
       return res.status(500).json({ error: "Failed to create client" });

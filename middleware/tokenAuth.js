@@ -24,9 +24,9 @@ const verifyToken = (req, res, next) => {
         req.body = {
           ...req.body,
           creatorDesignation: decoded.designation,
-          creatorUserName: decoded.username,
+          username: decoded.username,
         };
-     
+
         next();
       }
     });
