@@ -81,7 +81,7 @@ const updateClientCredits = async (req, res) => {
           totalRecharged: clientUser.totalRecharged + creditValue,
         }),
         ...(creditValue < 0 && {
-          totalRedeemed: clientUser.totalRedeemed + creditValue,
+          totalRedeemed: clientUser.totalRedeemed + Math.abs(creditValue),
         }),
       },
       { new: true }

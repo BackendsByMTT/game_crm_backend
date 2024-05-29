@@ -12,6 +12,7 @@ const corsOptions = {
   origin: [
     "*",
     "http://192.168.1.26:5173",
+    "http://localhost:3000",
     "https://game-crm-backend-r32s.onrender.com",
   ],
   credentials: true,
