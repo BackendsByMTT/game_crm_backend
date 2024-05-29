@@ -9,7 +9,7 @@ const companyController = require("./controllers/index.js");
 require("dotenv").config();
 
 const corsOptions = {
-  origin: "*",
+  origin: "http://192.168.1.26:5173",
   credentials: true,
   optionSuccessStatus: 200,
 };

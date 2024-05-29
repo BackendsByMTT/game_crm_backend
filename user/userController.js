@@ -97,10 +97,11 @@ const loginUser = async (req, res) => {
     );
 
     res.cookie("userToken", token, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 3,
+      withCredentials: true,
+      httpOnly: false,
+      secure: true,
+      sameSite: "none",
     });
 
     return res.status(200).json({ message: "Login successful" });
