@@ -50,7 +50,7 @@ const updateClientCredits = async (req, res) => {
       return res.status(400).json({ error: "Invalid credits value." });
     }
     const creditValue = parseInt(credits);
-    const userCredits = user.credits - creditValue;
+    const userCredits = user.credits + creditValue;
     const clientUserCredits = clientUser.credits + creditValue;
 
     if (user.designation !== "company" && userCredits < 0) {
@@ -59,12 +59,9 @@ const updateClientCredits = async (req, res) => {
         .json({ error: "Insufficient credits for this transaction." });
     }
     if (clientUserCredits < 0) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid credit update. Client's credits would become negative.",
-        });
+      return res.status(400).json({
+        error: "Invalid credit update. Client's credits would become negative.",
+      });
     }
 
     const transaction = await Transaction.create({
