@@ -17,7 +17,7 @@ userRoutes.post("/login", loginUser);
 userRoutes.post("/addClient", verifyToken, addClient);
 userRoutes.post("/getClientList", getClientList);
 //ALL DELETE REQ FOR USERS
-userRoutes.delete("/clients/:clientUserName", verifyAuth, deleteClient);
+userRoutes.delete("/clients/:username", verifyAuth, deleteClient);
 //ALL PUT REQ FOR USERS
 userRoutes.put(
   "/updateClientPassword/:clientUserName",

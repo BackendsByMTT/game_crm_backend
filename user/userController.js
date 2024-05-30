@@ -299,7 +299,7 @@ const deleteClient = async (req, res) => {
   const { username } = req.params;
   try {
     const deletedClient = await User.findOneAndDelete({
-      clientUserName: username,
+      username: username,
     });
     if (!deletedClient) {
       return res.status(404).json({ error: "Client not found" });
