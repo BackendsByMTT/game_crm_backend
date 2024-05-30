@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const verifyToken = (req, res, next) => {
+const verifyAuth = (req, res, next) => {
   const cookie =
     req.cookies.userToken ||
     req.headers.cookie
@@ -21,12 +21,6 @@ const verifyToken = (req, res, next) => {
           return res.status(401).json({ error: "You are not authenticated" });
         }
       } else {
-        req.body = {
-          ...req.body,
-          creatorDesignation: decoded.designation,
-          username: decoded.username,
-        };
-
         next();
       }
     });
@@ -35,4 +29,4 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+module.exports = { verifyAuth };

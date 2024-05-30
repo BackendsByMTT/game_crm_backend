@@ -4,7 +4,6 @@ const User = require("../models/userSchema");
 const Transaction = require("../models/transaction");
 
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const loginPlayer = async (req, res) => {
     try {
