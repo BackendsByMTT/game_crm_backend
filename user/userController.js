@@ -229,7 +229,7 @@ const getClientList = async (req, res) => {
     const totalClientCount = user[0].clientCount;
 
     if (!totalClientCount) {
-      return res.status(404).json({ error: "No User Found for this client" });
+      return res.status(204).json({ error: "No User Found for this client" });
     }
 
     if (startIndex + limitValue < totalClientCount) {
