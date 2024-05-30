@@ -59,7 +59,7 @@ const updateClientCredits = async (req, res) => {
     }
 
     // Check if clientUserCredits exceeds user.credits
-    if (clientUserCredits > user.credits) {
+    if (creditValue > user.credits) {
       return res
         .status(400)
         .json({ error: "Client's credits cannot exceed user's credits." });
@@ -70,7 +70,7 @@ const updateClientCredits = async (req, res) => {
         .status(400)
         .json({ error: "Insufficient credits for this transaction." });
     }
-    
+
     if (clientUserCredits <= 0) {
       return res.status(400).json({
         error: "Invalid credit update. Client's credits would become negative.",
