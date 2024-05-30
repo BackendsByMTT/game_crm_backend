@@ -30,7 +30,7 @@ const getRealTimeCredits = async (req, res) => {
 //{UPDATE THE USER CREDITS}
 const updateClientCredits = async (req, res) => {
   const { clientUserName } = req.params;
-  const { credits, username } = req.body;
+  const { credits, username, creatorDesignation } = req.body;
 
   try {
     const user = await User.findOne({ username: username });
@@ -66,12 +66,13 @@ const updateClientCredits = async (req, res) => {
 
     const transaction = await Transaction.create({
       credit: credits,
-      creditorDesignation: req.body.creatorDesignation,
-      debitorDesignation: clientDesignation[req.body.creatorDesignation],
+      creditorDesignation: creatorDesignation,
+      debitorDesignation: clientDesignation[creatorDesignation],
       creditor: username,
       debitor: clientUserName,
     });
 
+    // Update client user
     await User.findOneAndUpdate(
       { username: clientUserName },
       {
@@ -87,9 +88,13 @@ const updateClientCredits = async (req, res) => {
       { new: true }
     );
 
+    // Update user (creditor)
     await User.findOneAndUpdate(
       { username: username },
-      { credits: userCredits },
+      {
+        $push: { transactions: transaction._id },
+        credits: userCredits,
+      },
       { new: true }
     );
 

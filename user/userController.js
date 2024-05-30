@@ -97,7 +97,7 @@ const loginUser = async (req, res) => {
     );
 
     res.cookie("userToken", token, {
-      maxAge: 1000 * 60 * 60 * 24 ,
+      maxAge: 1000 * 60 * 60 * 24,
       withCredentials: true,
       httpOnly: false,
       secure: true,
@@ -137,6 +137,7 @@ const addClient = async (req, res) => {
     isPlayer,
     creatorDesignation,
     username,
+    credits,
   } = req.body;
 
   try {
@@ -164,6 +165,7 @@ const addClient = async (req, res) => {
       password: hashedPassword,
       nickName: clientNickName,
       designation: finalDesignation,
+      credits: credits,
     });
 
     if (newUser) {

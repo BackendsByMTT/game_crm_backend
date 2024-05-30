@@ -1,4 +1,5 @@
 const userRoutes = require("express").Router();
+const { verifyAuth } = require("../middleware/auth");
 const { verifyToken } = require("../middleware/tokenAuth");
 const {
   companyCreation,
@@ -16,7 +17,7 @@ userRoutes.post("/login", loginUser);
 userRoutes.post("/addClient", verifyToken, addClient);
 userRoutes.post("/getClientList", getClientList);
 //ALL DELETE REQ FOR USERS
-userRoutes.delete("/clients/:clientUserName", verifyToken, deleteClient);
+userRoutes.delete("/clients/:clientUserName", verifyAuth, deleteClient);
 //ALL PUT REQ FOR USERS
 userRoutes.put(
   "/updateClientPassword/:clientUserName",
